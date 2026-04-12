@@ -1,0 +1,82 @@
+{
+  "app": {
+    "name": "KrishSathi",
+    "tagline": "Your AI Agricultural Assistant"
+  },
+  "navigation": {
+    "home": "Home",
+    "ask": "Ask Question",
+    "upload": "Upload Image",
+    "weather": "Weather",
+    "profile": "Profile",
+    "help": "Help"
+  },
+  "home": {
+    "welcome": "Welcome to KrishSathi",
+    "subtitle": "Get instant agricultural advice in your language",
+    "voiceQuery": "Ask with Voice",
+    "textQuery": "Type Question",
+    "uploadImage": "Upload Plant Image",
+    "weatherInfo": "Weather Information",
+    "quickActions": "Quick Actions"
+  },
+  "query": {
+    "placeholder": "Ask your agricultural question...",
+    "voiceButton": "Hold to Speak",
+    "submit": "Submit",
+    "processing": "Processing your question...",
+    "answer": "Answer",
+    "sources": "Sources",
+    "helpful": "Was this helpful?",
+    "escalate": "Escalate to Officer",
+    "feedback": "Send Feedback"
+  },
+  "upload": {
+    "title": "Upload Plant Image",
+    "dragDrop": "Drag & drop image here or click to select",
+    "supportedFormats": "Supported formats: JPG, PNG, WebP",
+    "processing": "Analyzing your image...",
+    "result": "Analysis Result",
+    "confidence": "Confidence",
+    "recommendation": "Recommendation",
+    "disease": "Disease",
+    "treatment": "Treatment"
+  },
+  "weather": {
+    "title": "Weather Information",
+    "current": "Current Weather",
+    "forecast": "7-Day Forecast",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "rainfall": "Rainfall",
+    "windSpeed": "Wind Speed",
+    "advisory": "Agricultural Advisory"
+  },
+  "profile": {
+    "title": "Profile",
+    "language": "Language",
+    "location": "Location",
+    "crops": "My Crops",
+    "notifications": "Notifications",
+    "settings": "Settings"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "retry": "Retry"
+  },
+  "languages": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "ml": "മലയാളം",
+    "mr": "मराठी"
+  }
+}

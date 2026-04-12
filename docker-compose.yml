@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: krishsathi-postgres
+    environment:
+      POSTGRES_DB: krishsathi
+      POSTGRES_USER: krishsathi
+      POSTGRES_PASSWORD: krishsathi123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - krishsathi-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: krishsathi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - krishsathi-network
+
+  # Backend Spring Boot Application
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: krishsathi-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DATABASE_URL: jdbc:postgresql://postgres:5432/krishsathi
+      DATABASE_USERNAME: krishsathi
+      DATABASE_PASSWORD: krishsathi123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - krishsathi-network
+    volumes:
+      - ./backend/logs:/app/logs
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: krishsathi-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - krishsathi-network
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: krishsathi-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - krishsathi-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  krishsathi-network:
+    driver: bridge

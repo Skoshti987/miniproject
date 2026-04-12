@@ -1,0 +1,82 @@
+{
+  "app": {
+    "name": "कृषिसाथी",
+    "tagline": "आपका AI कृषि सहायक"
+  },
+  "navigation": {
+    "home": "होम",
+    "ask": "प्रश्न पूछें",
+    "upload": "छवि अपलोड करें",
+    "weather": "मौसम",
+    "profile": "प्रोफ़ाइल",
+    "help": "सहायता"
+  },
+  "home": {
+    "welcome": "कृषिसाथी में आपका स्वागत है",
+    "subtitle": "अपनी भाषा में तुरंत कृषि सलाह प्राप्त करें",
+    "voiceQuery": "आवाज़ से पूछें",
+    "textQuery": "प्रश्न टाइप करें",
+    "uploadImage": "पौधे की छवि अपलोड करें",
+    "weatherInfo": "मौसम की जानकारी",
+    "quickActions": "त्वरित कार्य"
+  },
+  "query": {
+    "placeholder": "अपना कृषि प्रश्न पूछें...",
+    "voiceButton": "बोलने के लिए दबाएं",
+    "submit": "जमा करें",
+    "processing": "आपके प्रश्न को संसाधित किया जा रहा है...",
+    "answer": "उत्तर",
+    "sources": "स्रोत",
+    "helpful": "क्या यह मददगार था?",
+    "escalate": "अधिकारी को भेजें",
+    "feedback": "फीडबैक भेजें"
+  },
+  "upload": {
+    "title": "पौधे की छवि अपलोड करें",
+    "dragDrop": "छवि यहाँ खींचें या चुनने के लिए क्लिक करें",
+    "supportedFormats": "समर्थित प्रारूप: JPG, PNG, WebP",
+    "processing": "आपकी छवि का विश्लेषण किया जा रहा है...",
+    "result": "विश्लेषण परिणाम",
+    "confidence": "विश्वसनीयता",
+    "recommendation": "सिफारिश",
+    "disease": "रोग",
+    "treatment": "उपचार"
+  },
+  "weather": {
+    "title": "मौसम की जानकारी",
+    "current": "वर्तमान मौसम",
+    "forecast": "7-दिन का पूर्वानुमान",
+    "temperature": "तापमान",
+    "humidity": "आर्द्रता",
+    "rainfall": "वर्षा",
+    "windSpeed": "हवा की गति",
+    "advisory": "कृषि सलाह"
+  },
+  "profile": {
+    "title": "प्रोफ़ाइल",
+    "language": "भाषा",
+    "location": "स्थान",
+    "crops": "मेरी फसलें",
+    "notifications": "सूचनाएं",
+    "settings": "सेटिंग्स"
+  },
+  "common": {
+    "yes": "हाँ",
+    "no": "नहीं",
+    "ok": "ठीक है",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "loading": "लोड हो रहा है...",
+    "error": "त्रुटि",
+    "success": "सफलता",
+    "retry": "पुनः प्रयास करें"
+  },
+  "languages": {
+    "en": "English",
+    "hi": "हिन्दी",
+    "ml": "മലയാളം",
+    "mr": "मराठी"
+  }
+}
