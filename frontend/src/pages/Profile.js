@@ -1,36 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, MapPin, Crop, Bell, Settings, Globe, Save } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
+  const { user, updateProfile: saveProfileToApi } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
-    name: 'Farmer Name',
-    location: 'Kerala, India',
-    language: i18n.language,
-    crops: ['Rice', 'Coconut', 'Banana'],
-    notifications: {
-      weather: true,
-      advisories: true,
-      diseases: true,
-      market: false
-    }
+    name: user?.name || 'Farmer Name',
+    location: user?.location || '',
+    language: user?.language || i18n.language,
+    crops: user?.crops?.length ? user.crops : ['Rice', 'Coconut', 'Banana'],
+    notifications: user?.notifications || { weather: true, advisories: true, diseases: true, market: false }
   });
 
   const [tempProfile, setTempProfile] = useState(profile);
+
+  useEffect(() => {
+    if (!user) return;
+    const nextProfile = {
+      name: user.name || 'Farmer Name',
+      location: user.location || '',
+      language: user.language || i18n.language,
+      crops: user.crops?.length ? user.crops : ['Rice', 'Coconut', 'Banana'],
+      notifications: user.notifications || { weather: true, advisories: true, diseases: true, market: false }
+    };
+    setProfile(nextProfile);
+    setTempProfile(nextProfile);
+  }, [user, i18n.language]);
 
   const handleEdit = () => {
     setTempProfile(profile);
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setProfile(tempProfile);
-    i18n.changeLanguage(tempProfile.language);
-    setIsEditing(false);
-    toast.success('Profile updated successfully!');
+  const handleSave = async () => {
+    try {
+      const updated = await saveProfileToApi(tempProfile);
+      setProfile({
+        name: updated.name || '',
+        location: updated.location || '',
+        language: updated.language || i18n.language,
+        crops: updated.crops || [],
+        notifications: updated.notifications || tempProfile.notifications
+      });
+      i18n.changeLanguage(tempProfile.language);
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update profile');
+    }
   };
 
   const handleCancel = () => {
@@ -155,7 +176,7 @@ const Profile = () => {
               />
             ) : (
               <div className="p-3 bg-gray-50 rounded-lg text-gray-800">
-                {profile.location}
+                {profile.location || 'Not set'}
               </div>
             )}
           </div>

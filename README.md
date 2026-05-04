@@ -37,12 +37,9 @@ KrishSathi is a mobile-first Progressive Web Application (PWA) that provides AI-
 - **PWA** with service workers
 
 ### Backend
-- **Spring Boot 3.1** with Java 17
-- **Spring Security** for authentication
-- **Spring Data JPA** for data persistence
-- **PostgreSQL** for primary database
-- **Redis** for caching
-- **WebSocket** for real-time notifications
+- **Node.js + Express** for REST API
+- **MongoDB** for database
+- **Mongoose** for data modeling
 
 ### ML/AI Services
 - **TensorFlow** for plant disease classification
@@ -55,11 +52,7 @@ KrishSathi is a mobile-first Progressive Web Application (PWA) that provides AI-
 
 ### Prerequisites
 - Node.js 18+ and npm
-- Java 17+
-- Maven 3.6+
-- Firebase project (for data storage)
-- PostgreSQL 13+ (optional, if not using Firebase)
-- Redis 6+ (optional, for caching)
+- MongoDB installed locally (Community Server)
 
 ### Installation
 
@@ -74,13 +67,12 @@ KrishSathi is a mobile-first Progressive Web Application (PWA) that provides AI-
    npm run install:all
    ```
 
-3. **Set up Firebase and environment variables**
+3. **Set up environment variables**
    ```bash
    # Copy environment template
    cp env.example .env
    
-   # Edit .env with your Firebase configuration
-   # See FIREBASE_SETUP.md for detailed instructions
+   # Edit .env with your MongoDB and JWT configuration
    ```
 
 4. **Start the application**
@@ -96,32 +88,6 @@ KrishSathi is a mobile-first Progressive Web Application (PWA) that provides AI-
 5. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8080/api
-   - Firebase Console: https://console.firebase.google.com/
-   - H2 Console: http://localhost:8080/api/h2-console (if using PostgreSQL)
-
-## Firebase Setup
-
-KrishSathi uses Firebase for data storage, authentication, and file storage. Follow these steps to set up Firebase:
-
-1. **Create Firebase Project**
-   - Go to [Firebase Console](https://console.firebase.google.com/)
-   - Create a new project named "krishsathi"
-
-2. **Enable Services**
-   - Firestore Database (for data storage)
-   - Authentication (for user management)
-   - Storage (for file uploads)
-   - Cloud Messaging (for notifications)
-
-3. **Configure Environment**
-   - Copy `env.example` to `.env`
-   - Fill in your Firebase configuration
-   - See [FIREBASE_SETUP.md](FIREBASE_SETUP.md) for detailed instructions
-
-4. **Set Up Security Rules**
-   - Configure Firestore security rules
-   - Set up Storage security rules
-   - Enable proper authentication
 
 ## Project Structure
 
@@ -135,13 +101,12 @@ krishsathi/
 │   │   ├── i18n/           # Internationalization files
 │   │   └── App.js          # Main application component
 │   └── package.json
-├── backend/                 # Spring Boot backend
-│   ├── src/main/java/com/krishsathi/
-│   │   ├── controller/      # REST API controllers
-│   │   ├── service/         # Business logic services
-│   │   ├── model/          # Data models
-│   │   └── config/         # Configuration classes
-│   └── pom.xml
+├── backend/                 # Node/Express backend
+│   ├── src/
+│   │   ├── models/          # Mongoose models
+│   │   └── routes/          # API routes
+│   ├── server.js
+│   └── package.json
 └── README.md
 ```
 

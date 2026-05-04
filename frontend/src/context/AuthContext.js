@@ -1,100 +1,80 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { auth } from '../firebase/config';
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, RecaptchaVerifier, signInWithPhoneNumber, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { userService } from '../firebase/firestore';
+import api from '../services/api';
 
-const AuthContext = createContext({ user: null, loading: true, loginWithGoogle: async () => {}, logout: async () => {}, loginWithEmailPassword: async () => {}, signupWithEmailPassword: async () => {}, sendPhoneOtp: async () => {}, verifyPhoneOtp: async () => {} });
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  loginWithEmailPassword: async () => {},
+  signupWithEmailPassword: async () => {},
+  logout: async () => {},
+  updateProfile: async () => {}
+});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const phoneConfirmationRef = useRef(null);
+  const initRef = useRef(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-      if (firebaseUser) {
-        try {
-          await userService.createOrUpdateUser(firebaseUser.uid, {
-            email: firebaseUser.email || null,
-            displayName: firebaseUser.displayName || null,
-            photoURL: firebaseUser.photoURL || null,
-            phoneNumber: firebaseUser.phoneNumber || null,
-            providerId: firebaseUser.providerData?.[0]?.providerId || 'google',
-            lastLoginAt: new Date().toISOString()
-          });
-        } catch (e) {
-          // Silent fail; UI should not block on profile persistence
-          console.error('Failed to persist user profile', e);
-        }
+    if (initRef.current) return;
+    initRef.current = true;
+    const bootstrap = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    });
-    return () => unsubscribe();
+      try {
+        const data = await api('/auth/me');
+        setUser(data.user);
+      } catch (error) {
+        localStorage.removeItem('authToken');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    bootstrap();
   }, []);
 
-  const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+  const loginWithEmailPassword = async (email, password) => {
+    const data = await api('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    localStorage.setItem('authToken', data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const signupWithEmailPassword = async (email, password, name) => {
+    const data = await api('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name })
+    });
+    localStorage.setItem('authToken', data.token);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const updateProfile = async (profileData) => {
+    const data = await api('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
+    setUser(data.user);
+    return data.user;
   };
 
   const logout = async () => {
-    await signOut(auth);
+    localStorage.removeItem('authToken');
+    setUser(null);
   };
 
-  const loginWithEmailPassword = async (email, password) => {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    return cred.user;
-  };
-
-  const signupWithEmailPassword = async (email, password, displayName) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    if (displayName) {
-      try {
-        await updateProfile(cred.user, { displayName });
-      } catch {}
-    }
-    await userService.createOrUpdateUser(cred.user.uid, {
-      email: cred.user.email || null,
-      displayName: cred.user.displayName || null,
-      photoURL: cred.user.photoURL || null,
-      phoneNumber: cred.user.phoneNumber || null,
-      providerId: cred.user.providerData?.[0]?.providerId || 'password',
-      lastLoginAt: new Date().toISOString()
-    });
-    return cred.user;
-  };
-
-  const ensureRecaptcha = (containerId = 'recaptcha-container') => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, { size: 'invisible' });
-    }
-    return window.recaptchaVerifier;
-  };
-
-  const sendPhoneOtp = async (e164PhoneNumber, containerId = 'recaptcha-container') => {
-    const verifier = ensureRecaptcha(containerId);
-    const confirmation = await signInWithPhoneNumber(auth, e164PhoneNumber, verifier);
-    phoneConfirmationRef.current = confirmation;
-    return true;
-  };
-
-  const verifyPhoneOtp = async (code) => {
-    if (!phoneConfirmationRef.current) throw new Error('OTP not requested');
-    const cred = await phoneConfirmationRef.current.confirm(code);
-    await userService.createOrUpdateUser(cred.user.uid, {
-      email: cred.user.email || null,
-      displayName: cred.user.displayName || null,
-      photoURL: cred.user.photoURL || null,
-      phoneNumber: cred.user.phoneNumber || null,
-      providerId: cred.user.providerData?.[0]?.providerId || 'phone',
-      lastLoginAt: new Date().toISOString()
-    });
-    phoneConfirmationRef.current = null;
-    return cred.user;
-  };
-
-  const value = useMemo(() => ({ user, loading, loginWithGoogle, logout, loginWithEmailPassword, signupWithEmailPassword, sendPhoneOtp, verifyPhoneOtp }), [user, loading]);
+  const value = useMemo(
+    () => ({ user, loading, loginWithEmailPassword, signupWithEmailPassword, logout, updateProfile }),
+    [user, loading]
+  );
 
   return (
     <AuthContext.Provider value={value}>

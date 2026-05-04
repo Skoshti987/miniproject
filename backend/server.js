@@ -1,0 +1,29 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
+
+// Load env vars
+dotenv.config();
+
+// Connect to database
+connectDB();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api', require('./routes/index'));
+
+// Error handler middleware placeholder
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Server Error' });
+});
+
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

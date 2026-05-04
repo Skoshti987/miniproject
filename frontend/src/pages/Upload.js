@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { Upload as UploadIcon, Image, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 
 const Upload = () => {
   const { t } = useTranslation();
@@ -54,32 +55,11 @@ const Upload = () => {
         formData.append('image', fileObj.file);
         formData.append('language', 'en'); // Get from i18n
 
-        // Simulate API call
-        const response = await fetch('/api/upload', {
+        const data = await api('/upload', {
           method: 'POST',
           body: formData,
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to process image');
-        }
-
-        // Simulate response for demo
-        const mockResult = {
-          id: fileObj.id,
-          fileName: fileObj.file.name,
-          disease: 'Rice Blast',
-          confidence: Math.random() * 0.4 + 0.6, // 60-100%
-          recommendation: 'Apply fungicide containing tricyclazole. Spray every 7-10 days during humid conditions.',
-          treatment: 'Chemical treatment with proper dosage as per Krishi Bhavan guidelines.',
-          severity: Math.random() > 0.5 ? 'Moderate' : 'High',
-          sources: [
-            'Plant Disease Handbook - ICAR',
-            'Kerala Agriculture Department Advisory'
-          ]
-        };
-
-        setResults(prev => [...prev, mockResult]);
+        setResults(prev => [...prev, { ...data, id: fileObj.id }]);
         
         // Update file status
         setUploadedFiles(prev => 

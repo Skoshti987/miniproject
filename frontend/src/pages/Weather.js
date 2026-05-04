@@ -1,68 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Cloud, Sun, CloudRain, Wind, Droplets, Thermometer, Eye } from 'lucide-react';
+import { Cloud, Sun, CloudRain, Wind, Droplets, Eye } from 'lucide-react';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const Weather = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [weatherData, setWeatherData] = useState(null);
   const [forecast, setForecast] = useState([]);
+  const [advisory, setAdvisory] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [location, setLocation] = useState('Kerala, India');
+  const [location, setLocation] = useState('');
+  const [locationInput, setLocationInput] = useState('');
 
   useEffect(() => {
-    fetchWeatherData();
-  }, []);
+    fetchWeatherData(user?.location || 'India');
+  }, [user?.location]);
 
-  const fetchWeatherData = async () => {
+  useEffect(() => {
+    setLocationInput(user?.location || '');
+  }, [user?.location]);
+
+  const fetchWeatherData = async (selectedLocation) => {
+    const q = selectedLocation?.trim() || 'India';
     setLoading(true);
     try {
-      // Simulate API call - replace with actual weather API
-      const mockWeatherData = {
-        current: {
-          temperature: 28,
-          humidity: 75,
-          rainfall: 12.5,
-          windSpeed: 8.2,
-          visibility: 10,
-          condition: 'Partly Cloudy',
-          icon: 'partly-cloudy'
-        },
-        forecast: [
-          { day: 'Today', high: 32, low: 24, condition: 'Partly Cloudy', rainfall: 5 },
-          { day: 'Tomorrow', high: 30, low: 23, condition: 'Rain', rainfall: 15 },
-          { day: 'Wednesday', high: 29, low: 22, condition: 'Heavy Rain', rainfall: 25 },
-          { day: 'Thursday', high: 31, low: 24, condition: 'Cloudy', rainfall: 8 },
-          { day: 'Friday', high: 33, low: 25, condition: 'Sunny', rainfall: 2 },
-          { day: 'Saturday', high: 32, low: 24, condition: 'Partly Cloudy', rainfall: 6 },
-          { day: 'Sunday', high: 30, low: 23, condition: 'Rain', rainfall: 12 }
-        ],
-        advisory: {
-          title: 'Agricultural Advisory for This Week',
-          recommendations: [
-            'Avoid spraying pesticides during rainy days (Wednesday-Thursday)',
-            'Good time for transplanting rice seedlings',
-            'Monitor for fungal diseases due to high humidity',
-            'Harvest mature crops before heavy rainfall',
-            'Apply organic manure during dry spells'
-          ],
-          warnings: [
-            'Heavy rainfall expected on Wednesday - take necessary precautions',
-            'High humidity may cause fungal infections in vegetables'
-          ]
-        }
-      };
-
-      setTimeout(() => {
-        setWeatherData(mockWeatherData.current);
-        setForecast(mockWeatherData.forecast);
-        setLoading(false);
-      }, 1000);
-
+      const data = await api(`/weather?location=${encodeURIComponent(q)}`);
+      setWeatherData(data.current);
+      setForecast(data.forecast || []);
+      setAdvisory(data.advisory || null);
+      setLocation(data.location || q);
     } catch (error) {
       console.error('Error fetching weather data:', error);
+      toast.error(error?.message || 'Failed to fetch weather');
+      setWeatherData(null);
+      setForecast([]);
+      setAdvisory(null);
+      setLocation(q);
+    } finally {
       setLoading(false);
     }
   };
+
+  const handleLocationSubmit = (e) => {
+    e.preventDefault();
+    fetchWeatherData(locationInput.trim() || user?.location || 'India');
+  };
+
+  const quickLocations = [user?.location, 'Pune, India', 'Nashik, India', 'Nagpur, India']
+    .filter(Boolean)
+    .filter((value, index, self) => self.indexOf(value) === index);
 
   const getWeatherIcon = (condition) => {
     switch (condition.toLowerCase()) {
@@ -105,8 +94,51 @@ const Weather = () => {
           {t('weather.title')}
         </h1>
         <p className="text-gray-600">
-          Current weather and agricultural advisories for {location}
+          {weatherData
+            ? `Current weather and agricultural advisories for ${location}`
+            : `Enter a place to load weather${location ? ` (last search: ${location})` : ''}.`}
         </p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-lg p-4">
+        <form onSubmit={handleLocationSubmit} className="space-y-3">
+          <label className="block text-sm font-medium text-gray-700">
+            Check weather for village / city / district
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={locationInput}
+              onChange={(e) => setLocationInput(e.target.value)}
+              placeholder="e.g. Kolhapur, Maharashtra, India"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+            <button
+              type="submit"
+              className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg font-semibold transition-colors"
+            >
+              Get Weather
+            </button>
+          </div>
+        </form>
+
+        {quickLocations.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {quickLocations.map((loc) => (
+              <button
+                key={loc}
+                type="button"
+                onClick={() => {
+                  setLocationInput(loc);
+                  fetchWeatherData(loc);
+                }}
+                className="text-sm px-3 py-1 rounded-full bg-gray-100 hover:bg-green-100 text-gray-700"
+              >
+                {loc}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Current Weather */}
@@ -174,6 +206,11 @@ const Weather = () => {
         </h2>
         
         <div className="space-y-3">
+          {forecast.length === 0 && (
+            <p className="text-gray-500 text-sm px-3 py-4">
+              {weatherData ? 'No forecast rows returned.' : 'Use the search box above to load a forecast.'}
+            </p>
+          )}
           {forecast.map((day, index) => (
             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-4">
@@ -206,18 +243,18 @@ const Weather = () => {
       </div>
 
       {/* Agricultural Advisory */}
-      {weatherData?.advisory && (
+      {advisory && (
         <div className="bg-green-50 rounded-xl p-6">
           <h2 className="text-2xl font-bold text-green-800 mb-4 flex items-center">
             <Cloud className="mr-2" size={28} />
-            {weatherData.advisory.title}
+            {advisory.title}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-semibold text-green-700 mb-3">Recommendations</h3>
               <ul className="space-y-2">
-                {weatherData.advisory.recommendations.map((rec, index) => (
+                {advisory.recommendations.map((rec, index) => (
                   <li key={index} className="flex items-start space-x-2 text-green-700">
                     <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                     <span>{rec}</span>
@@ -229,7 +266,7 @@ const Weather = () => {
             <div>
               <h3 className="text-lg font-semibold text-red-700 mb-3">Warnings</h3>
               <ul className="space-y-2">
-                {weatherData.advisory.warnings.map((warning, index) => (
+                {advisory.warnings.map((warning, index) => (
                   <li key={index} className="flex items-start space-x-2 text-red-700">
                     <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                     <span>{warning}</span>

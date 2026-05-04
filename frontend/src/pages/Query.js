@@ -1,14 +1,30 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSpeechRecognition } from 'react-speech-kit';
-// Lightweight language detection using browser Intl if available
-const detectLanguageCode = async (text) => {
+import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+const detectLanguageCode = async (text, preferredLanguage) => {
+  if (preferredLanguage) return preferredLanguage;
+
+  if (/[\u0900-\u097F]/.test(text)) return 'mr';
+  if (/[\u0D00-\u0D7F]/.test(text)) return 'ml';
+
   try {
-    // Fallback: use current i18n language
     return navigator.language?.split('-')[0] || 'en';
   } catch {
     return 'en';
   }
+};
+
+const toSpeechLocale = (languageCode) => {
+  const map = {
+    en: 'en-IN',
+    hi: 'hi-IN',
+    mr: 'mr-IN',
+    ml: 'ml-IN'
+  };
+  return map[languageCode] || 'en-IN';
 };
 
 const translateText = async (text, targetLang, apiKey = process.env.REACT_APP_GOOGLE_TRANSLATE_API_KEY) => {
@@ -25,41 +41,24 @@ const translateText = async (text, targetLang, apiKey = process.env.REACT_APP_GO
     return text;
   }
 };
-import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle } from 'lucide-react';
-import { toast } from 'react-toastify';
 
 const Query = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [answer, setAnswer] = useState('');
   const [sources, setSources] = useState([]);
   const [feedback, setFeedback] = useState(null);
+  const [queryId, setQueryId] = useState(null);
   const textareaRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const [listening, setListening] = useState(false);
 
-  const { listen, listening, stop } = useSpeechRecognition({
-    onResult: (result) => {
-      setQuery(result);
-    },
-    onEnd: () => {
-      setIsRecording(false);
-    }
-  });
-
-  const handleVoiceInput = () => {
-    if (listening) {
-      stop();
-      setIsRecording(false);
-    } else {
-      listen();
-      setIsRecording(true);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const submitQuery = async (text) => {
+    const cleanQuery = (text || '').trim();
+    if (!cleanQuery) return;
 
     setIsProcessing(true);
     setAnswer('');
@@ -67,65 +66,102 @@ const Query = () => {
     setFeedback(null);
 
     try {
-      const detectedLang = await detectLanguageCode(query.trim());
-      // Simulate API call - replace with actual API
-      const response = await fetch('/api/query', {
+      const detectedLang = await detectLanguageCode(cleanQuery, user?.language);
+      const data = await api('/query', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
-          query: query.trim(),
+          query: cleanQuery,
           language: detectedLang,
-          location: 'Kerala, India', // Get from user profile
+          location: user?.location?.trim() || 'India',
         }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to get answer');
-      }
-
-      const data = await response.json();
       const translated = await translateText(data.answer, detectedLang);
       setAnswer(translated);
       setSources(data.sources || []);
-      
-      // Simulate response for demo
-      setTimeout(() => {
-        const demo = `
-          Based on your question about "${query}", here's what I found:
-
-          For rice cultivation in Kerala, the recommended practices include:
-          - Use certified seeds from Krishi Bhavan
-          - Maintain proper water level (2-3 cm)
-          - Apply fertilizers in three splits
-          - Monitor for common diseases like blast and sheath blight
-          - Follow integrated pest management practices
-
-          The best time for transplanting is during the monsoon season (June-July).
-        `;
-        translateText(demo, detectedLang).then((t) => setAnswer(t));
-        setSources([
-          { title: 'Rice Cultivation Guide - Krishi Bhavan', date: '2024-01-15' },
-          { title: 'Kerala Agriculture Department Advisory', date: '2024-01-10' }
-        ]);
-        setIsProcessing(false);
-      }, 2000);
-
+      setQueryId(data.id || null);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to get answer. Please try again.');
+    } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Voice input is not supported in this browser.');
+      return;
+    }
+
+    if (recognitionRef.current && listening) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = toSpeechLocale(user?.language);
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setListening(true);
+      setIsRecording(true);
+    };
+    recognition.onend = () => {
+      setListening(false);
+      setIsRecording(false);
+    };
+    recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript || '';
+      if (transcript) {
+        setQuery(transcript);
+        if (!isProcessing) {
+          submitQuery(transcript);
+        }
+      }
+    };
+    recognition.onerror = () => {
+      setListening(false);
+      setIsRecording(false);
+      toast.error('Could not capture voice input.');
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await submitQuery(query);
+  };
+
   const handleFeedback = (isHelpful) => {
-    setFeedback(isHelpful);
-    toast.success('Thank you for your feedback!');
+    if (!queryId) return;
+    api('/query/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ queryId, helpful: isHelpful })
+    })
+      .then(() => {
+        setFeedback(isHelpful);
+        toast.success('Thank you for your feedback!');
+      })
+      .catch((error) => {
+        toast.error(error?.message || 'Failed to save feedback');
+      });
   };
 
   const handleEscalate = () => {
-    toast.info('Your query has been escalated to the nearest Krishi Bhavan officer.');
+    if (!queryId) return;
+    api('/query/escalate', {
+      method: 'POST',
+      body: JSON.stringify({ queryId })
+    })
+      .then(() => {
+        toast.info('Your query has been escalated to the nearest Krishi Bhavan officer.');
+      })
+      .catch((error) => {
+        toast.error(error?.message || 'Failed to escalate query');
+      });
   };
 
   return (
