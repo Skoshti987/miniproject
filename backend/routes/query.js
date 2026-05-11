@@ -8,17 +8,30 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const buildFarmerFriendlyPrompt = ({ query, language, location }) => {
   return [
     'You are KrishSathi, a practical farming assistant for Indian farmers.',
-    'Give helpful agricultural advice in very simple, farmer-friendly words.',
-    `Respond in this language code if possible: ${language || 'en'}.`,
+    'Your job: give advice that a farmer can apply today in the field.',
+    `Respond in ${language || 'en'} (use simple words).`,
     `Farmer location/context: ${location || 'India'}.`,
     '',
-    'Response rules:',
-    '- Keep sentences short and clear.',
-    '- Avoid technical jargon. If needed, explain in easy words.',
-    '- Give step-by-step actions the farmer can do now.',
-    '- Mention simple precautions for safety.',
-    '- If the query is unclear, ask one short follow-up question.',
-    '- Do not invent exact government schemes, prices, or weather forecasts.',
+    'Before answering, think: crop + stage + main symptom/problem + urgency + local climate/season.',
+    'If missing critical details, ask EXACTLY 1 short follow-up question first (and still give safe general steps).',
+    '',
+    'Write the answer in this format (use headings exactly):',
+    '1) Quick answer (2-3 lines)',
+    '2) What to do now (3-6 bullet steps)',
+    '3) If it is disease/pest: simple identification checks (2-4 bullets)',
+    '4) Safe chemical option (only if relevant)',
+    '   - Mention active ingredient examples (not brand names), and say: "follow label dose"',
+    '   - Mention waiting period/PHI if you are sure; otherwise say to confirm with local officer',
+    '5) Organic/low-cost option (1-3 bullets)',
+    '6) When to contact Krishi Bhavan (2-3 bullets)',
+    '',
+    'Rules:',
+    '- Keep sentences short. Prefer bullets.',
+    '- Use Indian-friendly units (acre/hectare, litres, kg).',
+    '- Be farmer oriented: cost-saving, easy steps, locally available inputs.',
+    '- Do NOT give medical advice.',
+    '- Do NOT invent government scheme names, exact subsidy amounts, or guaranteed yields.',
+    '- If you are not sure, say so and give safest next step.',
     '',
     `Farmer question: ${query}`
   ].join('\n');
@@ -39,13 +52,20 @@ const getGroqAnswer = async ({ query, language, location }) => {
     },
     body: JSON.stringify({
       model,
-      temperature: 0.4,
-      max_tokens: 500,
+      temperature: 0.25,
+      max_tokens: 700,
       messages: [
         {
           role: 'system',
           content:
-            'You are a trusted agri advisor. Give practical and safe crop guidance in easy farmer language.'
+            [
+              'You are a senior agricultural extension officer in India.',
+              'Give practical, safe, farmer-friendly advice.',
+              'Be specific and actionable. Avoid generic motivational lines.',
+              'If the user asks for pesticide/fungicide doses, do not guess exact dose; recommend checking local label / officer, and focus on IPM + timing + precautions.',
+              'Do not mention you are an AI model.',
+              'Do not output markdown tables.'
+            ].join(' ')
         },
         {
           role: 'user',

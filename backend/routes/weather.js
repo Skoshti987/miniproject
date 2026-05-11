@@ -103,15 +103,85 @@ const fetchGeoRows = async (apiKey, q, limit = 8) => {
   return Array.isArray(geoData) ? geoData : [];
 };
 
+const INDIAN_STATE_FIXES = {
+  maharastra: 'Maharashtra', maharasthra: 'Maharashtra', maharastra: 'Maharashtra',
+  marashtra: 'Maharashtra', maharstra: 'Maharashtra',
+  karnatka: 'Karnataka', karnatak: 'Karnataka',
+  tamilnadu: 'Tamil Nadu', tamilnad: 'Tamil Nadu',
+  uttarpradesh: 'Uttar Pradesh', uttrakhand: 'Uttarakhand',
+  madhyapradesh: 'Madhya Pradesh', madhyaprdesh: 'Madhya Pradesh',
+  andhrapradesh: 'Andhra Pradesh', andrapradesh: 'Andhra Pradesh',
+  westbengal: 'West Bengal',
+  chhattisgarh: 'Chhattisgarh', chatisgarh: 'Chhattisgarh', chattisgarh: 'Chhattisgarh',
+  himachal: 'Himachal Pradesh',
+  jharkhand: 'Jharkhand', jharkand: 'Jharkhand',
+  rajsthan: 'Rajasthan', rjasthan: 'Rajasthan',
+  gujrat: 'Gujarat', gujarth: 'Gujarat',
+  punjb: 'Punjab',
+  orissa: 'Odisha',
+  telgana: 'Telangana', telengana: 'Telangana'
+};
+
+// Built-in coordinates for common Indian cities (fallback when geocoding fails)
+const INDIAN_CITY_COORDS = {
+  kolhapur: { lat: 16.7050, lon: 74.2433, name: 'Kolhapur', state: 'Maharashtra', country: 'IN' },
+  pune: { lat: 18.5204, lon: 73.8567, name: 'Pune', state: 'Maharashtra', country: 'IN' },
+  mumbai: { lat: 19.0760, lon: 72.8777, name: 'Mumbai', state: 'Maharashtra', country: 'IN' },
+  nashik: { lat: 19.9975, lon: 73.7898, name: 'Nashik', state: 'Maharashtra', country: 'IN' },
+  nagpur: { lat: 21.1458, lon: 79.0882, name: 'Nagpur', state: 'Maharashtra', country: 'IN' },
+  delhi: { lat: 28.7041, lon: 77.1025, name: 'New Delhi', state: 'Delhi', country: 'IN' },
+  bangalore: { lat: 12.9716, lon: 77.5946, name: 'Bengaluru', state: 'Karnataka', country: 'IN' },
+  bengaluru: { lat: 12.9716, lon: 77.5946, name: 'Bengaluru', state: 'Karnataka', country: 'IN' },
+  chennai: { lat: 13.0827, lon: 80.2707, name: 'Chennai', state: 'Tamil Nadu', country: 'IN' },
+  hyderabad: { lat: 17.3850, lon: 78.4867, name: 'Hyderabad', state: 'Telangana', country: 'IN' },
+  kolkata: { lat: 22.5726, lon: 88.3639, name: 'Kolkata', state: 'West Bengal', country: 'IN' },
+  jaipur: { lat: 26.9124, lon: 75.7873, name: 'Jaipur', state: 'Rajasthan', country: 'IN' },
+  lucknow: { lat: 26.8467, lon: 80.9462, name: 'Lucknow', state: 'Uttar Pradesh', country: 'IN' },
+  ahmedabad: { lat: 23.0225, lon: 72.5714, name: 'Ahmedabad', state: 'Gujarat', country: 'IN' },
+  surat: { lat: 21.1702, lon: 72.8311, name: 'Surat', state: 'Gujarat', country: 'IN' },
+  indore: { lat: 22.7196, lon: 75.8577, name: 'Indore', state: 'Madhya Pradesh', country: 'IN' },
+  bhopal: { lat: 23.2599, lon: 77.4126, name: 'Bhopal', state: 'Madhya Pradesh', country: 'IN' },
+  patna: { lat: 25.6093, lon: 85.1376, name: 'Patna', state: 'Bihar', country: 'IN' },
+  chandigarh: { lat: 30.7333, lon: 76.7794, name: 'Chandigarh', state: 'Chandigarh', country: 'IN' },
+  thiruvananthapuram: { lat: 8.5241, lon: 76.9366, name: 'Thiruvananthapuram', state: 'Kerala', country: 'IN' },
+  kochi: { lat: 9.9312, lon: 76.2673, name: 'Kochi', state: 'Kerala', country: 'IN' },
+  coimbatore: { lat: 11.0168, lon: 76.9558, name: 'Coimbatore', state: 'Tamil Nadu', country: 'IN' },
+  vizag: { lat: 17.6868, lon: 83.2185, name: 'Visakhapatnam', state: 'Andhra Pradesh', country: 'IN' },
+  visakhapatnam: { lat: 17.6868, lon: 83.2185, name: 'Visakhapatnam', state: 'Andhra Pradesh', country: 'IN' },
+  bhubaneswar: { lat: 20.2961, lon: 85.8245, name: 'Bhubaneswar', state: 'Odisha', country: 'IN' },
+  dehradun: { lat: 30.3165, lon: 78.0322, name: 'Dehradun', state: 'Uttarakhand', country: 'IN' },
+  ranchi: { lat: 23.3441, lon: 85.3096, name: 'Ranchi', state: 'Jharkhand', country: 'IN' },
+  guwahati: { lat: 26.1445, lon: 91.7362, name: 'Guwahati', state: 'Assam', country: 'IN' }
+};
+
+const fixIndianStateTypos = (q) => {
+  let fixed = q;
+  for (const [typo, correct] of Object.entries(INDIAN_STATE_FIXES)) {
+    fixed = fixed.replace(new RegExp(`\\b${typo}\\b`, 'gi'), correct);
+  }
+  return fixed;
+};
+
 const resolveGeo = async (apiKey, rawLocation) => {
   const location = rawLocation.trim() || 'India';
   const preferIndia = suggestsIndiaBias(location);
 
+  // Fix common Indian state misspellings
+  const fixedLocation = fixIndianStateTypos(location);
+
   const attempts = [
-    location,
-    !/,\s*(india|in)\s*$/i.test(location) ? `${location}, India` : null,
-    !/,\s*(india|in)\s*$/i.test(location) ? `${location}, IN` : null
+    fixedLocation,
+    !/,\s*(india|in)\s*$/i.test(fixedLocation) ? `${fixedLocation}, India` : null,
+    !/,\s*(india|in)\s*$/i.test(fixedLocation) ? `${fixedLocation}, IN` : null
   ].filter(Boolean);
+
+  // Fallback: if query has 2+ tokens, also try just first token (city) + India
+  const tokens = fixedLocation.split(/[\s,]+/).filter((t) => t.length > 1);
+  if (tokens.length >= 2) {
+    const cityOnly = tokens[0];
+    attempts.push(`${cityOnly}, India`);
+    attempts.push(`${cityOnly}, IN`);
+  }
 
   const tried = new Set();
   for (const q of attempts) {
@@ -127,6 +197,14 @@ const resolveGeo = async (apiKey, rawLocation) => {
       biasIndia: preferIndia || /,\s*(india|in)\s*$/i.test(q)
     });
     if (best) return best;
+  }
+
+  // Ultimate fallback: check built-in Indian city coordinates
+  for (const tok of tokens) {
+    const cityKey = tok.toLowerCase();
+    if (INDIAN_CITY_COORDS[cityKey]) {
+      return INDIAN_CITY_COORDS[cityKey];
+    }
   }
 
   return null;
