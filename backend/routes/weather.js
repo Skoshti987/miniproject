@@ -14,7 +14,10 @@ const safeJson = async (response) => {
   }
 };
 
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
 const getAdviceFromWeather = (current, forecast) => {
+  // Static fallback used only when Groq is unavailable
   const recommendations = [];
   const warnings = [];
 
@@ -50,6 +53,99 @@ const getAdviceFromWeather = (current, forecast) => {
     recommendations,
     warnings
   };
+};
+
+const getDynamicWeatherAdvisory = async ({ current, forecast, location }) => {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+
+  const currentSummary = [
+    `Temperature: ${current.temperature}°C`,
+    `Humidity: ${current.humidity}%`,
+    `Rainfall: ${current.rainfall}mm`,
+    `Wind: ${current.windSpeed}km/h`,
+    `Condition: ${current.condition}`
+  ].join(', ');
+
+  const forecastSummary = forecast.slice(0, 5).map((d) =>
+    `${d.day}: ${d.high}/${d.low}°C, ${d.condition}, rain ${d.rainfall}mm`
+  ).join('; ');
+
+  const prompt = [
+    'You are KrishSathi, a practical farming weather advisor for Indian farmers.',
+    `Location: ${location || 'India'}.`,
+    'Give advice a farmer can act on TODAY based on this weather data.',
+    'Use simple Hindi-English mix if helpful. Keep it short and practical.',
+    '',
+    `Current weather: ${currentSummary}`,
+    `5-day forecast: ${forecastSummary}`,
+    '',
+    'Return ONLY valid JSON (no extra text) in this exact schema:',
+    '{',
+    '  "title": "short weather advisory title",',
+    '  "summary": "1-2 sentence overview of what farmer should watch for today",',
+    '  "recommendations": ["actionable tip 1", "tip 2", ...],',
+    '  "warnings": ["alert 1", ...],',
+    '  "irrigationAdvice": "when and how much to irrigate",',
+    '  "sprayAdvice": "whether to spray today or wait, and why",',
+    '  "cropRisk": "which crops are most at risk from this weather and why"',
+    '}',
+    '',
+    'Rules:',
+    '- Be specific to the weather numbers, not generic.',
+    '- If rain is coming, mention field drainage and harvesting timing.',
+    '- If hot and dry, mention irrigation timing and mulching.',
+    '- If humid, mention fungal risk and ventilation.',
+    '- Max 5 recommendations, max 3 warnings.',
+    '- Do not recommend specific pesticide brands or doses.'
+  ].join('\n');
+
+  try {
+    const resp = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.3,
+        max_tokens: 600,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a careful agricultural weather advisor. Output ONLY valid JSON. Be specific to the weather data provided.'
+          },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    if (!resp.ok) return null;
+
+    const payload = await resp.json();
+    const content = payload?.choices?.[0]?.message?.content?.trim();
+    if (!content) return null;
+
+    const start = content.indexOf('{');
+    const end = content.lastIndexOf('}');
+    if (start === -1 || end === -1) return null;
+
+    const parsed = JSON.parse(content.slice(start, end + 1));
+    return {
+      title: parsed.title || 'Weather-based farming advisory',
+      summary: parsed.summary || '',
+      recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+      irrigationAdvice: parsed.irrigationAdvice || '',
+      sprayAdvice: parsed.sprayAdvice || '',
+      cropRisk: parsed.cropRisk || ''
+    };
+  } catch {
+    return null;
+  }
 };
 
 const weekday = (dateString) =>
@@ -282,7 +378,20 @@ router.get('/', async (req, res) => {
       };
     });
 
-    const advisory = getAdviceFromWeather(current, forecast);
+    // Try dynamic Groq advisory first (8s timeout), fall back to static
+    let advisory;
+    try {
+      const dynamicPromise = getDynamicWeatherAdvisory({ current, forecast, location: displayLocation });
+      const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 8000));
+      advisory = await Promise.race([dynamicPromise, timeoutPromise]);
+    } catch {
+      advisory = null;
+    }
+
+    if (!advisory) {
+      advisory = getAdviceFromWeather(current, forecast);
+    }
+
     return res.json({ location: displayLocation, current, forecast, advisory });
   } catch (error) {
     return res.status(500).json({ message: error.message || 'Failed to load weather information' });
