@@ -1,0 +1,13 @@
+{
+  "model_version": "1.0.0",
+  "model_architecture": "MobileNetV3_Small",
+  "classes": [
+    "Healthy",
+    "Mosaic",
+    "Red Rot",
+    "Rust",
+    "Yellow"
+  ],
+  "training_date": "2026-08-31",
+  "best_val_accuracy": 0.8319
+}

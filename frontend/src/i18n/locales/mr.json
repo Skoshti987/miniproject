@@ -1,62 +1,87 @@
 {
   "app": {
     "name": "कृषिसाथी",
-    "tagline": "तुमचा AI शेती सहायक"
+    "tagline": "एआय-आधारित ऊस शेती सहाय्यक"
   },
   "navigation": {
-    "home": "होम",
-    "ask": "प्रश्न विचारा",
-    "upload": "छवि अपलोड करा",
-    "weather": "हवामान",
+    "home": "मुख्य पृष्ठ",
+    "sugarcaneDisease": "ऊस रोग निदान AI",
+    "ask": "कृषिसाथी चॅटबॉट",
+    "upload": "सामान्य पीक तपासणी",
+    "weather": "ऊस हवामान सल्ला",
     "profile": "प्रोफाइल",
     "help": "मदत"
   },
   "home": {
-    "welcome": "कृषिसाथीमध्ये आपले स्वागत",
-    "subtitle": "तुमच्या भाषेत त्वरित शेती सल्ला मिळवा",
-    "voiceQuery": "आवाजाने विचारा",
-    "textQuery": "प्रश्न टाइप करा",
-    "uploadImage": "वनस्पतीची छवि अपलोड करा",
-    "weatherInfo": "हवामान माहिती",
-    "quickActions": "द्रुत क्रिया"
+    "welcome": "कृषिसाथी ऊस शेती सहाय्यकामध्ये आपले स्वागत आहे",
+    "subtitle": "ऊस पानांच्या रोगांची एआय द्वारे अचूक ओळख आणि तज्ज्ञ सल्ला",
+    "sugarcaneDiseaseNav": "ऊस पान रोग तपासणी (AI)",
+    "voiceQuery": "बोलून विचारा",
+    "textQuery": "प्रश्न विचारा",
+    "uploadImage": "पानाचा फोटो अपलोड करा",
+    "weatherInfo": "हवामान आणि ऊस सल्ला",
+    "quickActions": "ऊस शेतकरी साधने"
+  },
+  "sugarcane": {
+    "title": "ऊस पान रोग AI निदान",
+    "subtitle": "ऊसाच्या पानाचा फोटो अपलोड करा आणि तांबेरा (Rust), तांबोरा (Red Rot), मोझॅक किंवा पिवळेपणा तात्काळ तपासा.",
+    "analyzeBtn": "फोटो तपासा",
+    "analyzing": "ऊसाच्या पानाचे विश्लेषण सुरू आहे...",
+    "cropLabel": "पीक",
+    "cropValue": "ऊस (Sugarcane)",
+    "predictedDisease": "निदान झालेला रोग",
+    "confidenceLabel": "AI अचूकता",
+    "severityLabel": "तीव्रता स्तर",
+    "recommendationsHeader": "शेतकऱ्यांसाठी महत्त्वाच्या उपाययोजना",
+    "preventionHeader": "रोग प्रतिबंध आणि दीर्घकालीन काळजी",
+    "askChatbotBtn": "कृषिसाथी कडून या रोगाबद्दल अधिक माहिती घ्या",
+    "clearBtn": "दुसरा फोटो तपासा",
+    "diseases": {
+      "Healthy": "निरोगी ऊस पान",
+      "Mosaic": "ऊस मोझॅक व्हायरस (Mosaic)",
+      "Red Rot": "तांबोरा / लाल कुज (Red Rot)",
+      "Rust": "तांबेरा (Rust)",
+      "Yellow": "यलो लीफ व्हायरस (Yellow Leaf)",
+      "Uncertain": "अस्पष्ट फोटो / पुन्हा प्रयत्न करा"
+    }
   },
   "query": {
-    "placeholder": "तुमचा शेती प्रश्न विचारा...",
-    "voiceButton": "बोलण्यासाठी दाबून ठेवा",
-    "submit": "सबमिट करा",
-    "processing": "तुमचा प्रश्न प्रक्रिया करत आहे...",
-    "answer": "उत्तर",
-    "sources": "स्रोत",
-    "helpful": "हे उपयुक्त होते का?",
-    "escalate": "अधिकाऱ्याकडे पाठवा",
-    "feedback": "अभिप्राय पाठवा"
+    "placeholder": "ऊस लागवड, खते, कीड किंवा रोगांबद्दल प्रश्न विचारा...",
+    "voiceButton": "बोलण्यासाठी दाबा",
+    "submit": "कृषिसाथी ला विचारा",
+    "processing": "प्रक्रिया सुरू आहे...",
+    "answer": "कृषिसाथी सल्ला",
+    "sources": "माहितीचे स्त्रोत",
+    "helpful": "हा सल्ला उपयुक्त ठरला का?",
+    "escalate": "कृषी अधिकाऱ्याकडे पाठवा",
+    "feedback": "प्रतिक्रिया द्या"
   },
   "upload": {
-    "title": "वनस्पतीची छवि अपलोड करा",
-    "dragDrop": "छवि येथे ड्रॅग करा किंवा निवडण्यासाठी क्लिक करा",
-    "supportedFormats": "समर्थित स्वरूपे: JPG, PNG, WebP",
-    "processing": "तुमच्या छवीचे विश्लेषण करत आहे...",
-    "result": "विश्लेषण परिणाम",
-    "confidence": "आत्मविश्वास",
-    "recommendation": "शिफारस",
+    "title": "झाडाचा फोटो अपलोड करा",
+    "dragDrop": "फोटो येथे टाका किंवा निवडा",
+    "supportedFormats": "समर्थित फॉरमॅट: JPG, PNG, WebP",
+    "processing": "विश्लेषण सुरू आहे...",
+    "result": "जाच निकाल",
+    "confidence": "विश्वासार्हता",
+    "recommendation": "सल्ला",
     "disease": "रोग",
     "treatment": "उपचार"
   },
   "weather": {
-    "title": "हवामान माहिती",
+    "title": "ऊस हवामान सल्ला",
     "current": "सध्याचे हवामान",
-    "forecast": "7-दिवसीय अंदाज",
+    "forecast": "७ दिवसांचा अंदाज",
     "temperature": "तापमान",
     "humidity": "आर्द्रता",
     "rainfall": "पाऊस",
     "windSpeed": "वाऱ्याचा वेग",
-    "advisory": "शेती सल्ला"
+    "advisory": "कृषी सल्ला"
   },
   "profile": {
     "title": "प्रोफाइल",
     "language": "भाषा",
     "location": "स्थान",
-    "crops": "माझ्या पिके",
+    "crops": "माझी पिके",
     "notifications": "सूचना",
     "settings": "सेटिंग्ज"
   },
@@ -65,12 +90,12 @@
     "no": "नाही",
     "ok": "ठीक आहे",
     "cancel": "रद्द करा",
-    "save": "सेव्ह करा",
-    "edit": "संपादित करा",
+    "save": "जतन करा",
+    "edit": "संपादन करा",
     "delete": "हटवा",
     "loading": "लोड होत आहे...",
     "error": "त्रुटी",
-    "success": "यश",
+    "success": "यशस्वी",
     "retry": "पुन्हा प्रयत्न करा"
   },
   "languages": {

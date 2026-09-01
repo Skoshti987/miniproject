@@ -21,35 +21,34 @@ const getAdviceFromWeather = (current, forecast) => {
   const recommendations = [];
   const warnings = [];
 
+  // Sugarcane Specific Weather Advisories
+  recommendations.push('Sugarcane crop care: ensure proper field drainage channels during heavy rains to prevent root rot.');
+
   if (current.humidity >= 80) {
-    recommendations.push('Humidity is high. Check crops for fungal disease and keep good field ventilation.');
-    warnings.push('High humidity can increase fungus risk in vegetables and pulses.');
+    recommendations.push('High humidity detected: Monitor sugarcane leaves for Rust or Red Rot lesions. Avoid excessive nitrogen applications.');
+    warnings.push('High humidity increases fungal disease risk in sugarcane and vegetables.');
   }
 
   if (current.windSpeed >= 20) {
-    recommendations.push('Support weak plants and postpone pesticide spraying in strong wind.');
-    warnings.push('Strong wind expected. Avoid spraying chemicals now.');
+    recommendations.push('Strong wind expected: Earthing-up sugarcane rows prevents lodging (falling over) of mature canes.');
+    warnings.push('Strong wind expected. Postpone pesticide spraying and secure tall sugarcane stalks.');
   }
 
   const heavyRainDay = forecast.find((day) => day.rainfall >= 20);
   if (heavyRainDay) {
-    recommendations.push('Clean field drains so rainwater can move out quickly.');
-    warnings.push(`Heavy rain expected on ${heavyRainDay.day}. Protect harvested produce.`);
+    recommendations.push(`Heavy rain expected on ${heavyRainDay.day}. Postpone field irrigation and fertigation.`);
+    warnings.push(`Heavy rain expected on ${heavyRainDay.day}. Clear field drains immediately.`);
   } else {
-    recommendations.push('If rain is low, plan irrigation and mulching to save moisture.');
+    recommendations.push('Low rainfall expected: Plan light irrigation during sugarcane tillering/formative stage.');
   }
 
   if (current.temperature >= 35) {
-    recommendations.push('Irrigate in early morning or evening to reduce heat stress.');
-    warnings.push('High temperature can stress crops. Avoid daytime fertilizer spray.');
-  }
-
-  if (!recommendations.length) {
-    recommendations.push('Continue normal crop care and monitor weather updates daily.');
+    recommendations.push('High temperature: Practice trash mulching between sugarcane rows to retain soil moisture and reduce heat stress.');
+    warnings.push('Extreme heat stress: Irrigate in early morning or evening.');
   }
 
   return {
-    title: 'Weather-based farming advisory',
+    title: 'Sugarcane & Crop Weather Advisory',
     recommendations,
     warnings
   };

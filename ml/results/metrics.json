@@ -1,0 +1,40 @@
+{
+  "model_version": "1.0.0",
+  "test_accuracy": 0.8775,
+  "precision": 0.8807,
+  "recall": 0.8775,
+  "f1_score": 0.8777,
+  "total_test_samples": 351,
+  "per_class_metrics": {
+    "Healthy": {
+      "precision": 0.9219,
+      "recall": 0.8194,
+      "f1_score": 0.8676,
+      "support": 72
+    },
+    "Mosaic": {
+      "precision": 0.7812,
+      "recall": 0.8772,
+      "f1_score": 0.8264,
+      "support": 57
+    },
+    "Red Rot": {
+      "precision": 0.8625,
+      "recall": 0.8734,
+      "f1_score": 0.8679,
+      "support": 79
+    },
+    "Rust": {
+      "precision": 0.9219,
+      "recall": 0.8676,
+      "f1_score": 0.8939,
+      "support": 68
+    },
+    "Yellow": {
+      "precision": 0.8987,
+      "recall": 0.9467,
+      "f1_score": 0.9221,
+      "support": 75
+    }
+  }
+}

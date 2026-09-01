@@ -13,6 +13,7 @@ import Weather from './pages/Weather';
 import Profile from './pages/Profile';
 import LanguageSelector from './components/LanguageSelector';
 import Login from './pages/Login';
+import SugarcaneDisease from './pages/SugarcaneDisease';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <main className="container mx-auto px-4 py-8">
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/sugarcane-disease" element={<SugarcaneDisease />} />
               <Route path="/query" element={<Query />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/weather" element={<Weather />} />

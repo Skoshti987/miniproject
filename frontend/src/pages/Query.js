@@ -1,9 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle, Sparkles } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+
 const detectLanguageCode = async (text, preferredLanguage) => {
   if (preferredLanguage) return preferredLanguage;
 
@@ -45,6 +47,8 @@ const translateText = async (text, targetLang, apiKey = process.env.REACT_APP_GO
 const Query = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
+
   const [query, setQuery] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -55,6 +59,15 @@ const Query = () => {
   const textareaRef = useRef(null);
   const recognitionRef = useRef(null);
   const [listening, setListening] = useState(false);
+
+  // Auto-fill query when coming from Disease Diagnosis page
+  useEffect(() => {
+    if (location.state && location.state.prefillQuery) {
+      const prefilled = location.state.prefillQuery;
+      setQuery(prefilled);
+      submitQuery(prefilled);
+    }
+  }, [location.state]);
 
   const submitQuery = async (text) => {
     const cleanQuery = (text || '').trim();
@@ -165,18 +178,21 @@ const Query = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          {t('query.placeholder')}
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="text-center space-y-2">
+        <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+          <Sparkles size={14} /> Sugarcane Knowledge Chatbot
+        </span>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Ask KrishSathi AI Assistant
         </h1>
-        <p className="text-gray-600">
-          Ask any agricultural question and get expert advice
+        <p className="text-gray-600 text-base max-w-xl mx-auto">
+          Get expert sugarcane advice on planting, soil care, tillering, pests, Red Rot, Rust, and fertilizer schedules in your language.
         </p>
       </div>
 
       {/* Query Form */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <textarea
@@ -184,46 +200,46 @@ const Query = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('query.placeholder')}
-              className="w-full p-4 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              className="w-full p-4 pr-20 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none text-base text-gray-800"
               rows={4}
               disabled={isProcessing}
             />
             <button
               type="button"
               onClick={handleVoiceInput}
-              className={`absolute right-3 top-3 p-2 rounded-lg transition-colors ${
+              className={`absolute right-3 top-3 p-3 rounded-xl transition-all shadow-sm ${
                 isRecording
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-red-500 text-white hover:bg-red-600 scale-105'
+                  : 'bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700'
               }`}
               disabled={isProcessing}
             >
-              {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+              {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
           </div>
 
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm font-medium text-gray-500">
               {isRecording && (
-                <span className="flex items-center space-x-1 text-red-500">
-                  <Mic size={16} className="animate-pulse" />
-                  <span>Listening...</span>
+                <span className="flex items-center space-x-2 text-red-500 font-semibold">
+                  <Mic size={18} className="animate-pulse" />
+                  <span>Listening in {user?.language || 'English'}... Speak now</span>
                 </span>
               )}
             </div>
             <button
               type="submit"
               disabled={!query.trim() || isProcessing}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2"
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md flex items-center space-x-2 text-base"
             >
               {isProcessing ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <span>{t('query.processing')}</span>
                 </>
               ) : (
                 <>
-                  <Send size={16} />
+                  <Send size={18} />
                   <span>{t('query.submit')}</span>
                 </>
               )}
@@ -234,27 +250,30 @@ const Query = () => {
 
       {/* Answer Section */}
       {answer && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <MessageCircle size={24} className="text-green-600" />
-            <h2 className="text-xl font-semibold text-gray-800">{t('query.answer')}</h2>
+        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-emerald-100 space-y-6">
+          <div className="flex items-center space-x-3 border-b border-gray-100 pb-4">
+            <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">
+              <MessageCircle size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">{t('query.answer')}</h2>
+              <span className="text-xs text-gray-500">Sugarcane AI Advisory</span>
+            </div>
           </div>
           
-          <div className="prose max-w-none">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-              {answer}
-            </p>
+          <div className="prose max-w-none text-gray-800 leading-relaxed text-base whitespace-pre-line bg-gray-50/50 p-6 rounded-xl border border-gray-100">
+            {answer}
           </div>
 
           {/* Sources */}
           {sources.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">{t('query.sources')}</h3>
+            <div className="pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-600 mb-3">{t('query.sources')}</h3>
               <div className="space-y-2">
                 {sources.map((source, index) => (
                   <div key={index} className="flex items-center space-x-2 text-sm text-gray-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>{source.title}</span>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                    <span className="font-medium">{source.title}</span>
                     <span className="text-gray-400">•</span>
                     <span>{source.date}</span>
                   </div>
@@ -263,69 +282,70 @@ const Query = () => {
             </div>
           )}
 
-          {/* Feedback Section */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {t('query.helpful')}
-                </h3>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => handleFeedback(true)}
-                    className={`flex items-center space-x-1 px-4 py-2 rounded-lg transition-colors ${
-                      feedback === true
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-green-50'
-                    }`}
-                  >
-                    <ThumbsUp size={16} />
-                    <span>{t('common.yes')}</span>
-                  </button>
-                  <button
-                    onClick={() => handleFeedback(false)}
-                    className={`flex items-center space-x-1 px-4 py-2 rounded-lg transition-colors ${
-                      feedback === false
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-gray-100 text-gray-600 hover:bg-red-50'
-                    }`}
-                  >
-                    <ThumbsDown size={16} />
-                    <span>{t('common.no')}</span>
-                  </button>
-                </div>
+          {/* Feedback & Escalation Section */}
+          <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">
+                {t('query.helpful')}
+              </h3>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleFeedback(true)}
+                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    feedback === true
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-emerald-50'
+                  }`}
+                >
+                  <ThumbsUp size={16} />
+                  <span>{t('common.yes')}</span>
+                </button>
+                <button
+                  onClick={() => handleFeedback(false)}
+                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    feedback === false
+                      ? 'bg-red-100 text-red-800 border border-red-300'
+                      : 'bg-gray-100 text-gray-700 hover:bg-red-50'
+                  }`}
+                >
+                  <ThumbsDown size={16} />
+                  <span>{t('common.no')}</span>
+                </button>
               </div>
-              
-              <button
-                onClick={handleEscalate}
-                className="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <AlertTriangle size={16} />
-                <span>{t('query.escalate')}</span>
-              </button>
             </div>
+            
+            <button
+              onClick={handleEscalate}
+              className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow transition-colors"
+            >
+              <AlertTriangle size={18} />
+              <span>{t('query.escalate')}</span>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Quick Questions */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">
-          Quick Questions
+      {/* Sugarcane Quick Questions */}
+      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          🌱 Frequently Asked Sugarcane Questions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            'How to control rice blast disease?',
-            'Best time to plant coconut saplings?',
-            'Organic fertilizer recommendations for vegetables',
-            'Weather advisory for this week',
-            'Pest control for banana cultivation',
-            'Soil testing and improvement methods'
+            'What fertilizer is needed during sugarcane tillering stage?',
+            'How often should I irrigate sugarcane in summer?',
+            'My sugarcane leaves are showing Red Rot symptoms. What should I do?',
+            'How can I prevent Sugarcane Mosaic Virus spread?',
+            'Best practices for sugarcane ratoon crop management',
+            'How to control sugarcane rust fungal infection organically?'
           ].map((question, index) => (
             <button
               key={index}
-              onClick={() => setQuery(question)}
-              className="text-left p-3 bg-gray-50 hover:bg-green-50 rounded-lg transition-colors border border-gray-200 hover:border-green-300"
+              onClick={() => {
+                setQuery(question);
+                submitQuery(question);
+              }}
+              className="text-left p-3.5 bg-gray-50 hover:bg-emerald-50/80 rounded-xl transition-all border border-gray-200 hover:border-emerald-300 text-sm font-medium text-gray-700 hover:text-emerald-900"
             >
               {question}
             </button>

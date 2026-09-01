@@ -1,39 +1,64 @@
 {
   "app": {
     "name": "KrishSathi",
-    "tagline": "Your AI Agricultural Assistant"
+    "tagline": "AI-Powered Sugarcane Farming Assistant"
   },
   "navigation": {
     "home": "Home",
-    "ask": "Ask Question",
-    "upload": "Upload Image",
-    "weather": "Weather",
+    "sugarcaneDisease": "Sugarcane Disease AI",
+    "ask": "Sugarcane Chatbot",
+    "upload": "General Plant Diagnosis",
+    "weather": "Sugarcane Weather",
     "profile": "Profile",
     "help": "Help"
   },
   "home": {
-    "welcome": "Welcome to KrishSathi",
-    "subtitle": "Get instant agricultural advice in your language",
+    "welcome": "KrishSathi Sugarcane Assistant",
+    "subtitle": "AI-Powered Leaf Disease Detection & Expert Sugarcane Farming Advisory",
+    "sugarcaneDiseaseNav": "Sugarcane Disease Detection",
     "voiceQuery": "Ask with Voice",
-    "textQuery": "Type Question",
-    "uploadImage": "Upload Plant Image",
-    "weatherInfo": "Weather Information",
-    "quickActions": "Quick Actions"
+    "textQuery": "Ask KrishSathi",
+    "uploadImage": "Upload Leaf Image",
+    "weatherInfo": "Sugarcane Weather & Advisory",
+    "quickActions": "Sugarcane Farmer Tools"
+  },
+  "sugarcane": {
+    "title": "Sugarcane Leaf Disease AI Diagnosis",
+    "subtitle": "Upload or capture a sugarcane leaf photo to instantly detect diseases like Red Rot, Mosaic, Rust, or Yellow Leaf.",
+    "analyzeBtn": "Analyze Sugarcane Image",
+    "analyzing": "Analyzing Sugarcane Leaf...",
+    "cropLabel": "Crop",
+    "cropValue": "Sugarcane (Saccharum officinarum)",
+    "predictedDisease": "Detected Condition",
+    "confidenceLabel": "AI Confidence",
+    "severityLabel": "Severity Level",
+    "recommendationsHeader": "Recommended Actions for Farmer",
+    "preventionHeader": "Prevention & Long-term Care",
+    "askChatbotBtn": "Ask KrishSathi About This Disease",
+    "clearBtn": "Analyze Another Image",
+    "diseases": {
+      "Healthy": "Healthy Sugarcane Leaf",
+      "Mosaic": "Sugarcane Mosaic Virus",
+      "Red Rot": "Red Rot Disease (Colletotrichum falcatum)",
+      "Rust": "Sugarcane Rust (Puccinia melanocephala)",
+      "Yellow": "Yellow Leaf Virus (SCYLV)",
+      "Uncertain": "Uncertain / Unclear Image"
+    }
   },
   "query": {
-    "placeholder": "Ask your agricultural question...",
+    "placeholder": "Ask any question about sugarcane farming, tillering, diseases, or fertilizers...",
     "voiceButton": "Hold to Speak",
-    "submit": "Submit",
-    "processing": "Processing your question...",
-    "answer": "Answer",
-    "sources": "Sources",
-    "helpful": "Was this helpful?",
-    "escalate": "Escalate to Officer",
+    "submit": "Ask KrishSathi",
+    "processing": "Thinking...",
+    "answer": "KrishSathi Advisory",
+    "sources": "Knowledge Sources",
+    "helpful": "Was this sugarcane advice helpful?",
+    "escalate": "Escalate to Krishi Officer",
     "feedback": "Send Feedback"
   },
   "upload": {
     "title": "Upload Plant Image",
-    "dragDrop": "Drag & drop image here or click to select",
+    "dragDrop": "Drag & drop leaf image here or click to select",
     "supportedFormats": "Supported formats: JPG, PNG, WebP",
     "processing": "Analyzing your image...",
     "result": "Analysis Result",
@@ -43,14 +68,14 @@
     "treatment": "Treatment"
   },
   "weather": {
-    "title": "Weather Information",
-    "current": "Current Weather",
+    "title": "Sugarcane Weather Advisory",
+    "current": "Current Field Weather",
     "forecast": "7-Day Forecast",
     "temperature": "Temperature",
     "humidity": "Humidity",
     "rainfall": "Rainfall",
     "windSpeed": "Wind Speed",
-    "advisory": "Agricultural Advisory"
+    "advisory": "Sugarcane Field Advisory"
   },
   "profile": {
     "title": "Profile",
@@ -71,7 +96,7 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "retry": "Retry"
+    "retry": "Try Again"
   },
   "languages": {
     "en": "English",

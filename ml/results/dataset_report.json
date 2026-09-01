@@ -1,0 +1,43 @@
+{
+  "total_raw_images": 2521,
+  "valid_images": 2311,
+  "corrupted_images": 0,
+  "duplicate_images": 210,
+  "class_counts_raw": {
+    "Healthy": 522,
+    "Mosaic": 462,
+    "Red Rot": 518,
+    "Rust": 514,
+    "Yellow": 505
+  },
+  "class_counts_clean": {
+    "Healthy": 476,
+    "Mosaic": 376,
+    "Red Rot": 518,
+    "Rust": 447,
+    "Yellow": 494
+  },
+  "split_counts": {
+    "train": {
+      "Healthy": 333,
+      "Mosaic": 263,
+      "Red Rot": 362,
+      "Rust": 312,
+      "Yellow": 345
+    },
+    "val": {
+      "Healthy": 71,
+      "Mosaic": 56,
+      "Red Rot": 77,
+      "Rust": 67,
+      "Yellow": 74
+    },
+    "test": {
+      "Healthy": 72,
+      "Mosaic": 57,
+      "Red Rot": 79,
+      "Rust": 68,
+      "Yellow": 75
+    }
+  }
+}
