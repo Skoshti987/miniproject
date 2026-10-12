@@ -4,7 +4,8 @@ import { Search, Filter, ExternalLink, ShieldCheck, Building2, IndianRupee, Drop
 import schemesData from '../data/governmentSchemes.json';
 
 const GovernmentSchemes = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || 'en';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -20,6 +21,19 @@ const GovernmentSchemes = () => {
     'Equipment',
     'Soil / Fertilizer'
   ];
+
+  // Helper function to get localized text for a scheme
+  const getSchemeField = (scheme, field) => {
+    if (scheme.translations && scheme.translations[currentLang] && scheme.translations[currentLang][field]) {
+      return scheme.translations[currentLang][field];
+    }
+    // Fallback if currentLang starts with mr, hi, etc.
+    const langPrefix = currentLang.split('-')[0];
+    if (scheme.translations && scheme.translations[langPrefix] && scheme.translations[langPrefix][field]) {
+      return scheme.translations[langPrefix][field];
+    }
+    return scheme[field];
+  };
 
   const getCategoryIcon = (category) => {
     switch (category) {
@@ -40,12 +54,18 @@ const GovernmentSchemes = () => {
 
   const filteredSchemes = useMemo(() => {
     return schemesData.filter((scheme) => {
+      const localizedName = getSchemeField(scheme, 'name') || '';
+      const localizedDesc = getSchemeField(scheme, 'description') || '';
+      const q = searchQuery.toLowerCase().trim();
+
       const matchesSearch =
-        searchQuery.trim() === '' ||
-        scheme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        scheme.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        scheme.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        scheme.government.toLowerCase().includes(searchQuery.toLowerCase());
+        q === '' ||
+        scheme.name.toLowerCase().includes(q) ||
+        localizedName.toLowerCase().includes(q) ||
+        scheme.description.toLowerCase().includes(q) ||
+        localizedDesc.toLowerCase().includes(q) ||
+        scheme.category.toLowerCase().includes(q) ||
+        scheme.government.toLowerCase().includes(q);
 
       const matchesGov =
         selectedGov === 'All' || scheme.government.toLowerCase() === selectedGov.toLowerCase();
@@ -55,7 +75,7 @@ const GovernmentSchemes = () => {
 
       return matchesSearch && matchesGov && matchesCategory;
     });
-  }, [searchQuery, selectedGov, selectedCategory]);
+  }, [searchQuery, selectedGov, selectedCategory, currentLang]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
@@ -90,7 +110,7 @@ const GovernmentSchemes = () => {
         {/* Farmer State & District Selector Bar */}
         <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-emerald-900 font-bold">
-            <span>📍 Farmer Location:</span>
+            <span>📍 {t('schemes.labels.location', { defaultValue: 'शेतकरी स्थान / ठिकाण' })}:</span>
             <span className="bg-white px-2.5 py-1 rounded-md border border-emerald-200 text-emerald-800">
               {farmerDistrict}, {farmerState}
             </span>
@@ -98,7 +118,7 @@ const GovernmentSchemes = () => {
 
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-1.5 font-medium text-gray-700">
-              <span>State:</span>
+              <span>{t('schemes.labels.state', { defaultValue: 'राज्य' })}:</span>
               <select
                 value={farmerState}
                 onChange={(e) => setFarmerState(e.target.value)}
@@ -108,12 +128,12 @@ const GovernmentSchemes = () => {
                 <option value="Uttar Pradesh">Uttar Pradesh (उत्तर प्रदेश)</option>
                 <option value="Karnataka">Karnataka (कर्नाटक)</option>
                 <option value="Tamil Nadu">Tamil Nadu (தமிழ்நாடு)</option>
-                <option value="All India">All India / Other</option>
+                <option value="All India">All India / इतर राज्ये</option>
               </select>
             </label>
 
             <label className="flex items-center gap-1.5 font-medium text-gray-700">
-              <span>District:</span>
+              <span>{t('schemes.labels.district', { defaultValue: 'जिल्हा' })}:</span>
               <select
                 value={farmerDistrict}
                 onChange={(e) => setFarmerDistrict(e.target.value)}
@@ -126,12 +146,12 @@ const GovernmentSchemes = () => {
                 <option value="Solapur">Solapur (सोलापूर)</option>
                 <option value="Ahmednagar">Ahmednagar (अहमदनगर)</option>
                 <option value="Nashik">Nashik (नाशिक)</option>
-                <option value="Other">Other District</option>
+                <option value="Other">{t('schemes.labels.otherDistrict', { defaultValue: 'इतर जिल्हा' })}</option>
               </select>
             </label>
 
             <span className="text-emerald-700 font-semibold hidden sm:inline">
-              ✓ Showing eligible benefits
+              ✓ {t('schemes.labels.showingEligible', { defaultValue: 'पात्र योजना व लाभ दाखवत आहे' })}
             </span>
           </div>
         </div>
@@ -202,17 +222,17 @@ const GovernmentSchemes = () => {
                   </span>
                   <span className="flex items-center gap-1.5 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                     {getCategoryIcon(scheme.category)}
-                    <span>{t(`schemes.categories.${scheme.category}`, { defaultValue: scheme.category })}</span>
+                    <span>{t(`schemes.categories.${scheme.category}`, { defaultValue: getSchemeField(scheme, 'category') || scheme.category })}</span>
                   </span>
                 </div>
 
                 {/* Scheme Title & Description */}
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 leading-snug mb-2">
-                    {scheme.name}
+                    {getSchemeField(scheme, 'name')}
                   </h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    {scheme.description}
+                    {getSchemeField(scheme, 'description')}
                   </p>
                 </div>
 
@@ -222,7 +242,7 @@ const GovernmentSchemes = () => {
                     {t('schemes.labels.eligibility')}
                   </h4>
                   <ul className="space-y-1">
-                    {scheme.eligibility.map((el, idx) => (
+                    {(getSchemeField(scheme, 'eligibility') || []).map((el, idx) => (
                       <li key={idx} className="flex items-start text-xs text-gray-700">
                         <span className="text-emerald-600 font-bold mr-1.5">•</span>
                         <span>{el}</span>
@@ -237,7 +257,7 @@ const GovernmentSchemes = () => {
                     {t('schemes.labels.benefits')}
                   </h4>
                   <ul className="space-y-1">
-                    {scheme.benefits.map((ben, idx) => (
+                    {(getSchemeField(scheme, 'benefits') || []).map((ben, idx) => (
                       <li key={idx} className="flex items-start text-xs text-gray-800">
                         <span className="text-emerald-600 font-bold mr-1.5">✓</span>
                         <span>{ben}</span>
@@ -245,6 +265,23 @@ const GovernmentSchemes = () => {
                     ))}
                   </ul>
                 </div>
+
+                {/* How to Apply */}
+                {getSchemeField(scheme, 'howToApply') && (
+                  <div className="bg-blue-50/60 rounded-xl p-3.5 border border-blue-100">
+                    <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-2">
+                      {t('schemes.labels.howToApply')}
+                    </h4>
+                    <ul className="space-y-1">
+                      {(getSchemeField(scheme, 'howToApply') || []).map((step, idx) => (
+                        <li key={idx} className="flex items-start text-xs text-blue-900">
+                          <span className="text-blue-600 font-bold mr-1.5">→</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Card Footer */}

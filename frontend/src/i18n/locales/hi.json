@@ -235,7 +235,12 @@
       "category": "श्रेणी",
       "eligibility": "पात्रता मानदंड",
       "benefits": "मुख्य लाभ",
-      "howToApply": "आवेदन कैसे करें"
+      "howToApply": "आवेदन कैसे करें",
+      "location": "किसान का स्थान",
+      "state": "राज्य",
+      "district": "जिला",
+      "otherDistrict": "अन्य जिला",
+      "showingEligible": "पात्र योजनाएं और लाभ प्रदर्शित हैं"
     }
   },
   "irrigationAssistant": {

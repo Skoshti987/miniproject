@@ -235,7 +235,12 @@
       "category": "वर्ग",
       "eligibility": "पात्रता अटी",
       "benefits": "योजनेचे फायदे",
-      "howToApply": "अर्ज कसा करावा"
+      "howToApply": "अर्ज कसा करावा",
+      "location": "शेतकरी स्थान / ठिकाण",
+      "state": "राज्य",
+      "district": "जिल्हा",
+      "otherDistrict": "इतर जिल्हा",
+      "showingEligible": "पात्र योजना व लाभ दाखवत आहे"
     }
   },
   "irrigationAssistant": {

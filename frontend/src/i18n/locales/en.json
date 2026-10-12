@@ -235,7 +235,12 @@
       "category": "Category",
       "eligibility": "Eligibility Criteria",
       "benefits": "Key Benefits",
-      "howToApply": "How to Apply"
+      "howToApply": "How to Apply",
+      "location": "Farmer Location",
+      "state": "State",
+      "district": "District",
+      "otherDistrict": "Other District",
+      "showingEligible": "Showing eligible benefits"
     }
   },
   "irrigationAssistant": {
