@@ -1,0 +1,162 @@
+[
+  {
+    "id": "pm-kisan",
+    "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+    "government": "Central",
+    "category": "Farmer Income Support",
+    "description": "Direct financial support of ₹6,000 per year in three equal installments to all landholding farmer families across India.",
+    "eligibility": [
+      "All landholding farmer families with cultivable land in their names",
+      "Subject to exclusion criteria (institutional landholders, high-income taxpayers, active government employees)"
+    ],
+    "benefits": [
+      "₹6,000 per year transferred directly to bank account via DBT",
+      "Paid in 3 equal installments of ₹2,000 every 4 months"
+    ],
+    "howToApply": [
+      "Visit PM-KISAN Portal or local Common Service Centre (CSC)",
+      "Submit Aadhaar, land holding records, and bank account details",
+      "Self-registration via Farmers Corner on official portal"
+    ],
+    "officialUrl": "https://pmkisan.gov.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "pmfby",
+    "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+    "government": "Central",
+    "category": "Insurance",
+    "description": "Comprehensive crop insurance scheme covering sugarcane and other crops against non-preventable natural risks, drought, floods, pests, and diseases.",
+    "eligibility": [
+      "All farmers including sharecroppers and tenant farmers growing notified crops in notified areas",
+      "Loanee and non-loanee sugarcane growers"
+    ],
+    "benefits": [
+      "Low premium rate (5% of sum insured for commercial crops like sugarcane, remainder subsidized by Govt)",
+      "Comprehensive coverage from pre-sowing to post-harvest losses"
+    ],
+    "howToApply": [
+      "Apply through bank branches, CSC centres, or PMFBY National Crop Insurance Portal",
+      "Must enroll before the cut-off date announced for the season"
+    ],
+    "officialUrl": "https://pmfby.gov.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "pmksy",
+    "name": "Pradhan Mantri Krishi Sinchayee Yojana (PMKSY) - Per Drop More Crop",
+    "government": "Central",
+    "category": "Irrigation",
+    "description": "Subsidies for micro-irrigation systems (drip and sprinkler) highly beneficial for sugarcane crop water efficiency.",
+    "eligibility": [
+      "Farmers owning agricultural land with a valid water source",
+      "Small and marginal farmers receive higher subsidy percentage"
+    ],
+    "benefits": [
+      "Up to 55% subsidy for small/marginal farmers and 45% for other farmers for installing Drip Irrigation in Sugarcane",
+      "Reduces sugarcane water requirement by 40-50% and improves yield"
+    ],
+    "howToApply": [
+      "Apply through state agriculture department portal or district agriculture officer",
+      "In Maharashtra, apply via MahaDBT Farmer Portal"
+    ],
+    "officialUrl": "https://pmksy.gov.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "mahadbt-sugarcane-drip",
+    "name": "Maharashtra Chief Minister Agriculture Power / Drip Subsidy Scheme",
+    "government": "Maharashtra",
+    "category": "Irrigation",
+    "description": "Special state subsidy scheme for Maharashtra sugarcane farmers to install drip irrigation systems and solar pumps.",
+    "eligibility": [
+      "Farmers in Maharashtra with valid 7/12 extract and sugarcane crop registration",
+      "Must have assured source of water"
+    ],
+    "benefits": [
+      "75% to 80% total combined central + state subsidy for drip irrigation in sugarcane fields",
+      "Solar pump subsidy up to 90-95% under Magel Tyala ShetTale / Mukhyamantri Solar Pump Yojana"
+    ],
+    "howToApply": [
+      "Register and apply online on Maharashtra MahaDBT Farmer Portal (mahadbt.maharashtra.gov.in)"
+    ],
+    "officialUrl": "https://mahadbt.maharashtra.gov.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "namo-shetkari",
+    "name": "Namo Shetkari MahaSanman Nidhi Yojana",
+    "government": "Maharashtra",
+    "category": "Farmer Income Support",
+    "description": "Maharashtra State Government income support scheme providing an additional ₹6,000 per year to PM-KISAN beneficiary farmers.",
+    "eligibility": [
+      "Farmers in Maharashtra enrolled and eligible under PM-KISAN scheme"
+    ],
+    "benefits": [
+      "Additional ₹6,000 per year (3 installments of ₹2,000 each)",
+      "Combined total financial support of ₹12,000 per year along with PM-KISAN"
+    ],
+    "howToApply": [
+      "Automatic e-KYC integration for active PM-KISAN beneficiaries in Maharashtra"
+    ],
+    "officialUrl": "https://krishi.maharashtra.gov.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "kcc",
+    "name": "Kisan Credit Card (KCC) Scheme for Sugarcane Farmers",
+    "government": "Central",
+    "category": "Loans / Financial Support",
+    "description": "Timely short-term crop credit to farmers at subsidized interest rates for sugarcane cultivation inputs, fertilizers, and field operations.",
+    "eligibility": [
+      "Individual/joint borrowers, tenant farmers, oral lessees, and sharecroppers growing sugarcane"
+    ],
+    "benefits": [
+      "Concessional interest rate of 4% per annum (with 3% prompt repayment incentive)",
+      "Credit limit based on sugarcane scale of finance fixed by District Level Technical Committee"
+    ],
+    "howToApply": [
+      "Apply at commercial banks, Regional Rural Banks (RRBs), or District Central Cooperative Banks (DCCBs)"
+    ],
+    "officialUrl": "https://www.myscheme.gov.in/schemes/kcc",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "sub-mission-agri-mechanization",
+    "name": "Sub-Mission on Agricultural Mechanization (SMAM)",
+    "government": "Central",
+    "category": "Equipment",
+    "description": "Financial assistance for purchasing sugarcane harvesters, tractor-drawn implements, ratoon management devices, and tillers.",
+    "eligibility": [
+      "Farmers, Custom Hiring Centres, and Cooperative Societies"
+    ],
+    "benefits": [
+      "40% to 50% subsidy on agricultural machinery including sugarcane trash shredders and cutters",
+      "Up to 80% grant for setting up Custom Hiring Centres"
+    ],
+    "howToApply": [
+      "Apply online via Agmachinery portal (agrimachinery.nic.in) or state DBT portals"
+    ],
+    "officialUrl": "https://agrimachinery.nic.in/",
+    "lastVerified": "2026-08-30"
+  },
+  {
+    "id": "soil-health-card",
+    "name": "Soil Health Card Scheme",
+    "government": "Central",
+    "category": "Soil / Fertilizer",
+    "description": "Provides crop-wise nutrient recommendations (NPK + micronutrients) specifically calibrated for sugarcane soil conditions.",
+    "eligibility": [
+      "All farmers growing crops in India"
+    ],
+    "benefits": [
+      "Free soil sample analysis every 3 years detailing 12 parameters (N, P, K, S, Zn, Fe, Cu, Mn, Bo, pH, EC, OC)",
+      "Custom fertilizer guidance to prevent soil degradation"
+    ],
+    "howToApply": [
+      "Contact local Agriculture Extension Officer or District Soil Testing Laboratory"
+    ],
+    "officialUrl": "https://soilhealth.dac.gov.in/",
+    "lastVerified": "2026-08-30"
+  }
+]

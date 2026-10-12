@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "KrishSathi",
-    "tagline": "AI-Powered Sugarcane Farming Assistant"
+    "tagline": "AI-Powered Sugarcane Farming Assistant",
+    "specializedBadge": "Specialized Sugarcane AI Assistant"
   },
   "navigation": {
     "home": "Home",
@@ -9,8 +10,11 @@
     "ask": "Sugarcane Chatbot",
     "upload": "General Plant Diagnosis",
     "weather": "Sugarcane Weather",
+    "schemes": "Government Schemes",
     "profile": "Profile",
-    "help": "Help"
+    "help": "Help",
+    "login": "Login",
+    "logout": "Logout"
   },
   "home": {
     "welcome": "KrishSathi Sugarcane Assistant",
@@ -20,7 +24,25 @@
     "textQuery": "Ask KrishSathi",
     "uploadImage": "Upload Leaf Image",
     "weatherInfo": "Sugarcane Weather & Advisory",
-    "quickActions": "Sugarcane Farmer Tools"
+    "quickActions": "Sugarcane Farmer Tools",
+    "diagnoseBtn": "Diagnose Leaf Disease",
+    "askAiBtn": "Ask KrishSathi AI",
+    "featuredTitle": "Sugarcane Leaf Disease AI Diagnosis",
+    "featuredDesc": "Trained ML model identifies Healthy leaves, Red Rot, Mosaic, Rust, and Yellow Leaf Virus with real-time actionable field treatment.",
+    "tryDiseaseAi": "Try Disease AI",
+    "empoweringHeader": "Empowering Sugarcane Farmers Across India",
+    "stats": {
+      "classes": "Sugarcane Classes",
+      "farmers": "Farmers Supported",
+      "accuracy": "Model Accuracy",
+      "languages": "Languages"
+    },
+    "descriptions": {
+      "disease": "Upload sugarcane leaf photos to detect Red Rot, Mosaic, Rust & Yellow Leaf",
+      "text": "Sugarcane-aware chatbot for tillering, soil, diseases, & fertilizer advice",
+      "voice": "Ask sugarcane questions using voice in English, Hindi, Marathi, Malayalam",
+      "weather": "Sugarcane field weather forecast, humidity risks & irrigation advisories"
+    }
   },
   "sugarcane": {
     "title": "Sugarcane Leaf Disease AI Diagnosis",
@@ -36,6 +58,17 @@
     "preventionHeader": "Prevention & Long-term Care",
     "askChatbotBtn": "Ask KrishSathi About This Disease",
     "clearBtn": "Analyze Another Image",
+    "choosePhoto": "Choose Photo / Camera",
+    "dropHere": "Drop leaf image here...",
+    "diseaseDescription": "Disease Description",
+    "lowConfidenceTitle": "Low Prediction Confidence",
+    "lowConfidenceMsg": "The condition could not be identified with sufficient confidence. Please upload a clearer image or consult an agricultural expert.",
+    "analysisError": "Analysis Error",
+    "severities": {
+      "Low": "Low",
+      "Moderate": "Moderate",
+      "High": "High"
+    },
     "diseases": {
       "Healthy": "Healthy Sugarcane Leaf",
       "Mosaic": "Sugarcane Mosaic Virus",
@@ -43,21 +76,93 @@
       "Rust": "Sugarcane Rust (Puccinia melanocephala)",
       "Yellow": "Yellow Leaf Virus (SCYLV)",
       "Uncertain": "Uncertain / Unclear Image"
+    },
+    "descriptions": {
+      "Healthy": "The sugarcane leaf appears healthy with proper green color and no visible disease symptoms.",
+      "Mosaic": "Sugarcane Mosaic Virus causes contrasting dark and light green patches or stripes along the leaf veins.",
+      "Red Rot": "Red Rot causes leaf yellowing, reddening of internal stalk tissues with white patches, and a sour alcoholic odor.",
+      "Rust": "Sugarcane Rust produces small yellowish spots that turn into elongated reddish-brown pustules on leaf undersides.",
+      "Yellow": "Yellow Leaf Virus causes intense yellowing of the leaf midrib on upper leaves, reducing sugar synthesis.",
+      "Uncertain": "The condition could not be identified with sufficient confidence. Please upload a clearer photo or consult an agricultural expert."
+    },
+    "actions": {
+      "Healthy": [
+        "Maintain balanced NPK fertilizer application according to crop stage.",
+        "Ensure timely irrigation during tillering and grand growth phases.",
+        "Inspect crop regularly for early signs of pests or disease."
+      ],
+      "Mosaic": [
+        "Rogue out and destroy infected young plants to stop viral spread.",
+        "Control aphid vectors using recommended neem-based bio-pesticides.",
+        "Avoid taking seed setts from infected fields for next planting cycle."
+      ],
+      "Red Rot": [
+        "Uproot and burn infected clumps immediately along with surrounding soil.",
+        "Apply Trichoderma viride bio-control agent around root zones.",
+        "Do not allow irrigation water to flow from infected fields to healthy fields."
+      ],
+      "Rust": [
+        "Ensure adequate field aeration and avoid excess nitrogen fertilizer.",
+        "Remove heavily infected lower leaves and burn them.",
+        "Apply protective copper/sulfur-based fungicide sprays as advised by local Krishi Bhavan."
+      ],
+      "Yellow": [
+        "Provide balanced potash and micronutrient spray (Zinc/Iron) to reduce stress.",
+        "Control aphid vectors early in the season.",
+        "Mark disease-free healthy clumps for seed collection."
+      ],
+      "Uncertain": [
+        "Upload a clearer, well-lit photo focusing closely on affected leaf symptoms.",
+        "Ensure the image is taken in bright daylight without harsh shadows.",
+        "Consult your local Krishi Bhavan officer for an in-person field diagnostic."
+      ]
+    },
+    "prevention": {
+      "Healthy": [
+        "Use certified disease-free seed cane (sett treatment).",
+        "Maintain proper field drainage to prevent waterlogging."
+      ],
+      "Mosaic": [
+        "Plant mosaic-resistant sugarcane varieties (e.g., Co 86032, Co 0238).",
+        "Keep field borders clear of wild grass hosts."
+      ],
+      "Red Rot": [
+        "Hot water treatment of seed setts (50°C for 2 hours) before planting.",
+        "Practice 2-year crop rotation with non-host crops like rice or pulses.",
+        "Avoid waterlogging in field rows."
+      ],
+      "Rust": [
+        "Cultivate rust-resistant sugarcane cultivars.",
+        "Maintain proper row spacing (4 to 5 feet) for optimal sunlight and ventilation."
+      ],
+      "Yellow": [
+        "Plant tissue-culture derived disease-free plantlets.",
+        "Maintain proper soil moisture during hot summer months."
+      ],
+      "Uncertain": [
+        "Take multiple photos from different angles if symptoms persist."
+      ]
     }
   },
   "query": {
+    "title": "KrishSathi AI Sugarcane Assistant",
+    "subtitle": "Ask any question about sugarcane cultivation, soil, tillering, irrigation, fertilizers, pests, or disease treatments.",
     "placeholder": "Ask any question about sugarcane farming, tillering, diseases, or fertilizers...",
     "voiceButton": "Hold to Speak",
+    "listening": "Listening... Speak your question",
     "submit": "Ask KrishSathi",
     "processing": "Thinking...",
     "answer": "KrishSathi Advisory",
     "sources": "Knowledge Sources",
     "helpful": "Was this sugarcane advice helpful?",
     "escalate": "Escalate to Krishi Officer",
-    "feedback": "Send Feedback"
+    "feedback": "Send Feedback",
+    "contextLoaded": "Sugarcane Disease Context Loaded from Diagnosis",
+    "sampleQuestions": "Sample Questions"
   },
   "upload": {
-    "title": "Upload Plant Image",
+    "title": "General Plant Image Upload",
+    "subtitle": "Upload crop leaf images for general diagnostic processing",
     "dragDrop": "Drag & drop leaf image here or click to select",
     "supportedFormats": "Supported formats: JPG, PNG, WebP",
     "processing": "Analyzing your image...",
@@ -65,7 +170,9 @@
     "confidence": "Confidence",
     "recommendation": "Recommendation",
     "disease": "Disease",
-    "treatment": "Treatment"
+    "treatment": "Treatment",
+    "chooseFiles": "Choose Files",
+    "analyzeImages": "Analyze Images"
   },
   "weather": {
     "title": "Sugarcane Weather Advisory",
@@ -75,7 +182,12 @@
     "humidity": "Humidity",
     "rainfall": "Rainfall",
     "windSpeed": "Wind Speed",
-    "advisory": "Sugarcane Field Advisory"
+    "advisory": "Sugarcane Field Advisory",
+    "inputLabel": "Check weather for village / city / district",
+    "inputPlaceholder": "e.g. Kolhapur, Maharashtra, India",
+    "getBtn": "Get Weather",
+    "loading": "Loading weather data...",
+    "searchPrompt": "Enter a place to load weather"
   },
   "profile": {
     "title": "Profile",
@@ -98,10 +210,69 @@
     "success": "Success",
     "retry": "Try Again"
   },
-  "languages": {
-    "en": "English",
-    "hi": "हिन्दी",
-    "ml": "മലയാളം",
-    "mr": "मराठी"
+  "schemes": {
+    "title": "Government Agriculture Schemes",
+    "subtitle": "Explore verified central and state government schemes, subsidies, and financial assistance available for sugarcane and crop farmers.",
+    "searchPlaceholder": "Search schemes by name, keyword (e.g. sugarcane, insurance, drip)...",
+    "allCategories": "All Categories",
+    "allGovernments": "All Governments",
+    "centralGov": "Central Government",
+    "stateGov": "Maharashtra Government",
+    "viewOfficialBtn": "View Official Details",
+    "verifiedOn": "Verified on",
+    "noMatch": "No matching government schemes found.",
+    "clearSearch": "Clear Search Filters",
+    "categories": {
+      "Farmer Income Support": "Farmer Income Support",
+      "Insurance": "Crop Insurance",
+      "Irrigation": "Irrigation & Drip",
+      "Loans / Financial Support": "Loans & Credit",
+      "Equipment": "Equipment & Machinery",
+      "Soil / Fertilizer": "Soil & Fertilizer"
+    },
+    "labels": {
+      "government": "Government",
+      "category": "Category",
+      "eligibility": "Eligibility Criteria",
+      "benefits": "Key Benefits",
+      "howToApply": "How to Apply"
+    }
+  },
+  "irrigationAssistant": {
+    "cardTitle": "Smart Crop Irrigation Assistant",
+    "cardPrompt": "🌱 Let me help you check your crop's watering needs. Share details or a photo of your sugarcane crop and answer a few quick questions.",
+    "district": "Village / District",
+    "growthStage": "Crop Age / Growth Stage",
+    "stages": {
+      "germination": "Germination (0 - 35 days)",
+      "tillering": "Formative / Tillering (35 - 120 days)",
+      "grandGrowth": "Grand Growth / Cane Elongation (120 - 270 days)",
+      "ripening": "Maturity / Ripening (270 - 360 days)"
+    },
+    "lastIrrigation": "Days Since Last Irrigation",
+    "recentRainfall": "Recent Rain or Waterlogging Observed?",
+    "soilType": "Soil Type",
+    "soils": {
+      "clay": "Heavy Black Clay (Retains moisture)",
+      "loam": "Medium Loam / Alluvial (Well-drained)",
+      "sandy": "Sandy / Light Soil (Drains quickly)"
+    },
+    "soilMoistureObs": "Farmer Observation on Soil & Leaves",
+    "obsOptions": {
+      "dryCracked": "Topsoil is dry / slight leaf curling in afternoon",
+      "moist": "Soil feels moist beneath 2 inches",
+      "wetPuddled": "Soil is saturated / water standing in furrows"
+    },
+    "optionalPhoto": "Crop / Field Photo (Optional)",
+    "checkBtn": "Calculate Watering Recommendation",
+    "recTitle": "Irrigation Recommendation",
+    "whyTitle": "Why this recommendation was made:",
+    "askFollowUp": "Ask Chatbot Follow-up Question",
+    "outcomes": {
+      "needed": "💧 Irrigation is Recommended Soon",
+      "waitRain": "🌦️ Wait and Reassess: Rainfall is Expected",
+      "avoidWet": "🚫 Avoid Irrigation: Field Has Adequate or Excess Moisture",
+      "insufficient": "ℹ️ Insufficient Information to Prescribe Exact Watering"
+    }
   }
 }

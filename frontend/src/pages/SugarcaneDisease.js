@@ -47,7 +47,7 @@ const SugarcaneDisease = () => {
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
-      toast.error('Please upload or capture a sugarcane leaf image first.');
+      toast.error(t('sugarcane.lowConfidenceMsg'));
       return;
     }
 
@@ -64,16 +64,23 @@ const SugarcaneDisease = () => {
         body: formData
       });
 
-      if (data && data.success) {
+      if (data && data.status === 'invalid_image') {
+        setResult(null);
+        setErrorMsg(data.message || 'Invalid image — please upload a clear sugarcane leaf photo.');
+        toast.warn(data.message || 'Invalid image — please upload a clear sugarcane leaf photo.');
+      } else if (data && data.success && data.prediction) {
         setResult(data);
-        toast.success('Sugarcane leaf analysis complete!');
+        setErrorMsg('');
+        toast.success(t('common.success'));
       } else {
-        throw new Error(data?.message || 'Analysis returned unexpected result');
+        setResult(null);
+        throw new Error(data?.message || t('sugarcane.lowConfidenceMsg'));
       }
     } catch (err) {
       console.error('Sugarcane Disease Analysis Error:', err);
-      setErrorMsg(err.message || 'Unable to analyze the image right now. Please try again.');
-      toast.error('Unable to analyze image right now.');
+      setResult(null);
+      setErrorMsg(err?.message || t('sugarcane.lowConfidenceMsg'));
+      toast.error(err?.message || t('sugarcane.analysisError'));
     } finally {
       setIsAnalyzing(false);
     }
@@ -81,12 +88,13 @@ const SugarcaneDisease = () => {
 
   const handleAskChatbot = () => {
     if (!result) return;
-    const diseaseName = result.prediction?.class || 'sugarcane disease';
+    const rawClass = result.prediction?.class || 'Healthy';
+    const localizedDiseaseName = t(`sugarcane.diseases.${rawClass}`, { defaultValue: rawClass });
     const confidencePct = Math.round((result.prediction?.confidence || 0) * 100);
     
-    const contextPrompt = `I analyzed my sugarcane leaf using KrishSathi AI and it predicted ${diseaseName} with ${confidencePct}% confidence. What should I do to treat and protect my crop?`;
+    const contextPrompt = `Sugarcane Leaf AI detected: ${rawClass} (${localizedDiseaseName}) with ${confidencePct}% confidence. How should I manage and cure this condition?`;
 
-    navigate('/query', { state: { prefillQuery: contextPrompt } });
+    navigate('/query', { state: { prefillQuery: contextPrompt, diseaseContext: { rawClass, localizedDiseaseName, confidencePct } } });
   };
 
   const getSeverityBadgeClass = (severity) => {
@@ -100,13 +108,31 @@ const SugarcaneDisease = () => {
     }
   };
 
+  const getLocalizedActions = (rawClass) => {
+    const actions = t(`sugarcane.actions.${rawClass}`, { returnObjects: true });
+    if (Array.isArray(actions)) return actions;
+    return result?.recommendation?.actions || [];
+  };
+
+  const getLocalizedPrevention = (rawClass) => {
+    const prev = t(`sugarcane.prevention.${rawClass}`, { returnObjects: true });
+    if (Array.isArray(prev)) return prev;
+    return result?.recommendation?.prevention || [];
+  };
+
+  const getLocalizedDescription = (rawClass) => {
+    const desc = t(`sugarcane.descriptions.${rawClass}`);
+    if (desc && desc !== `sugarcane.descriptions.${rawClass}`) return desc;
+    return result?.recommendation?.summary || '';
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-700 to-green-600 rounded-2xl shadow-xl p-6 md:p-8 text-white relative overflow-hidden">
         <div className="relative z-10">
           <span className="bg-emerald-800 text-emerald-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
-            🌾 KrishSathi Specialized Sugarcane AI
+            🌾 {t('app.specializedBadge')}
           </span>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             {t('sugarcane.title')}
@@ -133,13 +159,13 @@ const SugarcaneDisease = () => {
               <UploadIcon size={36} />
             </div>
             <h3 className="text-xl font-bold text-gray-800 mb-2">
-              {isDragActive ? 'Drop leaf image here...' : t('upload.dragDrop')}
+              {isDragActive ? t('sugarcane.dropHere') : t('upload.dragDrop')}
             </h3>
             <p className="text-sm text-gray-500 mb-6">
               {t('upload.supportedFormats')} (Max 10MB)
             </p>
             <button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-md transition-all">
-              Choose Photo / Camera
+              {t('sugarcane.choosePhoto')}
             </button>
           </div>
         ) : (
@@ -160,44 +186,62 @@ const SugarcaneDisease = () => {
               </button>
             </div>
 
-            {!result && (
-              <div className="flex justify-center">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-10 py-4 rounded-xl text-lg font-bold shadow-lg transition-all flex items-center justify-center space-x-3"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      <span>{t('sugarcane.analyzing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <UploadIcon size={22} />
-                      <span>{t('sugarcane.analyzeBtn')}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-3.5 rounded-xl text-base font-bold shadow-lg transition-all flex items-center justify-center space-x-3"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>{t('sugarcane.analyzing')}</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon size={20} />
+                    <span>{result ? 'Re-Analyze Image' : t('sugarcane.analyzeBtn')}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleClear}
+                disabled={isAnalyzing}
+                className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3.5 rounded-xl text-base font-semibold transition-colors flex items-center justify-center space-x-2"
+              >
+                <RefreshCw size={18} />
+                <span>Choose Different Photo</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Error Message display */}
       {errorMsg && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-xl flex items-start space-x-3 text-red-800">
-          <AlertTriangle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
-          <div>
-            <h4 className="font-semibold text-base">Analysis Error</h4>
-            <p className="text-sm">{errorMsg}</p>
-            <button
-              onClick={handleAnalyze}
-              className="mt-2 text-xs bg-red-600 text-white px-3 py-1 rounded font-medium hover:bg-red-700"
-            >
-              {t('common.retry')}
-            </button>
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-xl flex items-start space-x-3 text-amber-900 shadow-sm">
+          <AlertTriangle className="text-amber-500 flex-shrink-0 mt-0.5" size={24} />
+          <div className="flex-1">
+            <h4 className="font-bold text-base text-amber-900 mb-1">
+              Invalid or Unrecognized Image
+            </h4>
+            <p className="text-sm text-amber-800 leading-relaxed">{errorMsg}</p>
+            <div className="mt-3 flex items-center space-x-3">
+              <button
+                onClick={handleClear}
+                className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg font-semibold shadow-sm transition-colors flex items-center space-x-1.5"
+              >
+                <RefreshCw size={13} />
+                <span>Choose Another Photo</span>
+              </button>
+              <button
+                onClick={handleAnalyze}
+                className="text-xs bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
+              >
+                {t('common.retry')}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -219,7 +263,7 @@ const SugarcaneDisease = () => {
 
               <div className="flex items-center space-x-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getSeverityBadgeClass(result.recommendation?.severity)}`}>
-                  {result.recommendation?.severity || 'Moderate'} Severity
+                  {t(`sugarcane.severities.${result.recommendation?.severity || 'Moderate'}`, { defaultValue: result.recommendation?.severity || 'Moderate' })} {t('sugarcane.severityLabel')}
                 </span>
                 <span className="text-xs text-gray-400">
                   Model v{result.model_version || '1.0.0'}
@@ -261,23 +305,23 @@ const SugarcaneDisease = () => {
                 <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl flex items-start space-x-3 text-amber-800">
                   <ShieldAlert className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
                   <div>
-                    <h4 className="font-semibold text-sm">Low Prediction Confidence</h4>
+                    <h4 className="font-semibold text-sm">{t('sugarcane.lowConfidenceTitle')}</h4>
                     <p className="text-xs text-amber-700 mt-1">
-                      KrishSathi is not completely confident about this image. Please ensure good lighting or upload a close-up photo.
+                      {t('sugarcane.lowConfidenceMsg')}
                     </p>
                   </div>
                 </div>
               )}
 
               {/* Summary Description */}
-              {result.recommendation?.summary && (
+              {getLocalizedDescription(result.prediction.class) && (
                 <div>
                   <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center">
                     <FileText size={16} className="mr-2 text-green-600" />
-                    Disease Description
+                    {t('sugarcane.diseaseDescription')}
                   </h4>
                   <p className="text-gray-700 text-base leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    {result.recommendation.summary}
+                    {getLocalizedDescription(result.prediction.class)}
                   </p>
                 </div>
               )}
@@ -285,14 +329,14 @@ const SugarcaneDisease = () => {
               {/* Actions Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Immediate Actions */}
-                {result.recommendation?.actions?.length > 0 && (
+                {getLocalizedActions(result.prediction.class).length > 0 && (
                   <div className="bg-green-50/70 rounded-xl p-5 border border-green-100">
                     <h4 className="text-base font-bold text-green-900 mb-3 flex items-center">
                       <CheckCircle size={18} className="mr-2 text-green-600" />
                       {t('sugarcane.recommendationsHeader')}
                     </h4>
                     <ul className="space-y-2">
-                      {result.recommendation.actions.map((act, idx) => (
+                      {getLocalizedActions(result.prediction.class).map((act, idx) => (
                         <li key={idx} className="flex items-start text-sm text-gray-800">
                           <span className="text-green-600 font-bold mr-2">•</span>
                           <span>{act}</span>
@@ -303,14 +347,14 @@ const SugarcaneDisease = () => {
                 )}
 
                 {/* Prevention */}
-                {result.recommendation?.prevention?.length > 0 && (
+                {getLocalizedPrevention(result.prediction.class).length > 0 && (
                   <div className="bg-blue-50/70 rounded-xl p-5 border border-blue-100">
                     <h4 className="text-base font-bold text-blue-900 mb-3 flex items-center">
                       <ShieldAlert size={18} className="mr-2 text-blue-600" />
                       {t('sugarcane.preventionHeader')}
                     </h4>
                     <ul className="space-y-2">
-                      {result.recommendation.prevention.map((prev, idx) => (
+                      {getLocalizedPrevention(result.prediction.class).map((prev, idx) => (
                         <li key={idx} className="flex items-start text-sm text-gray-800">
                           <span className="text-blue-600 font-bold mr-2">•</span>
                           <span>{prev}</span>

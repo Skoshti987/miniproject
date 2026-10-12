@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import api from '../services/api';
 
 const Upload = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState([]);
@@ -53,7 +53,8 @@ const Upload = () => {
       for (const fileObj of uploadedFiles) {
         const formData = new FormData();
         formData.append('image', fileObj.file);
-        formData.append('language', 'en'); // Get from i18n
+        formData.append('language', i18n.language || 'en');
+        formData.append('crop', 'Sugarcane');
 
         const data = await api('/upload', {
           method: 'POST',
@@ -98,7 +99,7 @@ const Upload = () => {
           {t('upload.title')}
         </h1>
         <p className="text-gray-600">
-          Upload plant images for AI-powered disease diagnosis
+          {t('upload.subtitle')}
         </p>
       </div>
 
@@ -121,7 +122,7 @@ const Upload = () => {
             {t('upload.supportedFormats')}
           </p>
           <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-            Choose Files
+            {t('upload.chooseFiles')}
           </button>
         </div>
       </div>
@@ -131,7 +132,7 @@ const Upload = () => {
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-800">
-              Uploaded Images ({uploadedFiles.length})
+              {t('upload.title')} ({uploadedFiles.length})
             </h2>
             <button
               onClick={processImages}
@@ -146,7 +147,7 @@ const Upload = () => {
               ) : (
                 <>
                   <Image size={16} />
-                  <span>Analyze Images</span>
+                  <span>{t('upload.analyzeImages')}</span>
                 </>
               )}
             </button>

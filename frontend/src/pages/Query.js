@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -45,7 +45,7 @@ const translateText = async (text, targetLang, apiKey = process.env.REACT_APP_GO
 };
 
 const Query = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const location = useLocation();
 
@@ -56,9 +56,12 @@ const Query = () => {
   const [sources, setSources] = useState([]);
   const [feedback, setFeedback] = useState(null);
   const [queryId, setQueryId] = useState(null);
+  const [messages, setMessages] = useState([]);
   const textareaRef = useRef(null);
   const recognitionRef = useRef(null);
   const [listening, setListening] = useState(false);
+
+  const [serviceNotice, setServiceNotice] = useState(null);
 
   // Auto-fill query when coming from Disease Diagnosis page
   useEffect(() => {
@@ -77,24 +80,31 @@ const Query = () => {
     setAnswer('');
     setSources([]);
     setFeedback(null);
+    setServiceNotice(null);
+
+    const newHistory = [...messages, { role: 'user', content: cleanQuery }];
 
     try {
-      const detectedLang = await detectLanguageCode(cleanQuery, user?.language);
+      const currentLang = i18n.language || 'en';
       const data = await api('/query', {
         method: 'POST',
         body: JSON.stringify({
           query: cleanQuery,
-          language: detectedLang,
+          language: currentLang,
           location: user?.location?.trim() || 'India',
+          history: messages.slice(-6)
         }),
       });
-      const translated = await translateText(data.answer, detectedLang);
-      setAnswer(translated);
+      setAnswer(data.answer);
       setSources(data.sources || []);
       setQueryId(data.id || null);
+      if (data.serviceNotice) {
+        setServiceNotice(data.serviceNotice);
+      }
+      setMessages([...newHistory, { role: 'assistant', content: data.answer }]);
     } catch (error) {
-      console.error('Error:', error);
-      toast.error('Failed to get answer. Please try again.');
+      console.error('Chatbot error:', error);
+      toast.error(error?.message || t('common.error'));
     } finally {
       setIsProcessing(false);
     }
@@ -103,7 +113,7 @@ const Query = () => {
   const handleVoiceInput = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error('Voice input is not supported in this browser.');
+      toast.error('Voice input is not supported in this browser. Please type your question.');
       return;
     }
 
@@ -112,8 +122,9 @@ const Query = () => {
       return;
     }
 
+    const currentActiveLang = i18n.language || user?.language || 'en';
     const recognition = new SpeechRecognition();
-    recognition.lang = toSpeechLocale(user?.language);
+    recognition.lang = toSpeechLocale(currentActiveLang);
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onstart = () => {
@@ -136,11 +147,32 @@ const Query = () => {
     recognition.onerror = () => {
       setListening(false);
       setIsRecording(false);
-      toast.error('Could not capture voice input.');
+      toast.error('Could not capture voice input. Please check microphone permissions.');
     };
 
     recognitionRef.current = recognition;
     recognition.start();
+  };
+
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const handleSpeakAnswer = () => {
+    if (!('speechSynthesis' in window)) {
+      toast.info('Text-to-speech audio is not supported in this browser.');
+      return;
+    }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    const currentActiveLang = i18n.language || user?.language || 'en';
+    const cleanText = answer.replace(/[#*`_]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = toSpeechLocale(currentActiveLang);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   const handleSubmit = async (e) => {
@@ -181,18 +213,25 @@ const Query = () => {
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
       <div className="text-center space-y-2">
         <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
-          <Sparkles size={14} /> Sugarcane Knowledge Chatbot
+          <Sparkles size={14} /> {t('app.specializedBadge')}
         </span>
         <h1 className="text-3xl font-bold text-gray-800">
-          Ask KrishSathi AI Assistant
+          {t('query.title')}
         </h1>
         <p className="text-gray-600 text-base max-w-xl mx-auto">
-          Get expert sugarcane advice on planting, soil care, tillering, pests, Red Rot, Rust, and fertilizer schedules in your language.
+          {t('query.subtitle')}
         </p>
       </div>
 
       {/* Query Form */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 space-y-4">
+        {location.state?.diseaseContext && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between text-sm text-emerald-900 font-medium">
+            <span>
+              🌱 <strong>{t('query.contextLoaded')}:</strong> {location.state.diseaseContext.localizedDiseaseName} ({location.state.diseaseContext.confidencePct}% {t('sugarcane.confidenceLabel')})
+            </span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <textarea
@@ -223,7 +262,7 @@ const Query = () => {
               {isRecording && (
                 <span className="flex items-center space-x-2 text-red-500 font-semibold">
                   <Mic size={18} className="animate-pulse" />
-                  <span>Listening in {user?.language || 'English'}... Speak now</span>
+                  <span>{t('query.listening')}</span>
                 </span>
               )}
             </div>
@@ -251,16 +290,37 @@ const Query = () => {
       {/* Answer Section */}
       {answer && (
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-emerald-100 space-y-6">
-          <div className="flex items-center space-x-3 border-b border-gray-100 pb-4">
-            <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">
-              <MessageCircle size={22} />
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">
+                <MessageCircle size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{t('query.answer')}</h2>
+                <span className="text-xs text-gray-500">Sugarcane AI Advisory</span>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">{t('query.answer')}</h2>
-              <span className="text-xs text-gray-500">Sugarcane AI Advisory</span>
-            </div>
+
+            <button
+              onClick={handleSpeakAnswer}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                isSpeaking
+                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
+                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+              }`}
+            >
+              {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              <span>{isSpeaking ? 'Stop Audio' : 'Listen Answer'}</span>
+            </button>
           </div>
           
+          {serviceNotice && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-xs flex items-center gap-2">
+              <span className="font-bold">ℹ️ Note:</span>
+              <span>{serviceNotice}</span>
+            </div>
+          )}
+
           <div className="prose max-w-none text-gray-800 leading-relaxed text-base whitespace-pre-line bg-gray-50/50 p-6 rounded-xl border border-gray-100">
             {answer}
           </div>

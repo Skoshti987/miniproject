@@ -43,7 +43,21 @@ router.post('/predict', upload.single('image'), async (req, res) => {
 
     const predictionData = await mlResponse.json();
 
-    // Optionally save prediction if user authenticated
+    // Check if the ML service identified an invalid or non-sugarcane image
+    if (predictionData.status === 'invalid_image' || predictionData.valid_leaf === false) {
+      return res.json({
+        success: false,
+        status: 'invalid_image',
+        valid_leaf: false,
+        disease: null,
+        confidence: null,
+        severity: null,
+        treatment: null,
+        message: predictionData.message || 'Please upload a clear image of a sugarcane leaf.'
+      });
+    }
+
+    // Optionally save prediction if user authenticated and valid leaf
     if (req.user && req.user.id) {
       try {
         await Upload.create({

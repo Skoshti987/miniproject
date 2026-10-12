@@ -186,3 +186,10 @@ docs/_build/
 
 # Local configuration
 local.properties
+
+# Scratch & Temporary Testing Artifacts
+scratch_*.py
+test_write.txt
+test_*.png
+miniproject/
+

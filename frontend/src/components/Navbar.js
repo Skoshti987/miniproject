@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageCircle, Upload, Cloud, User, Activity } from 'lucide-react';
+import { Home, MessageCircle, Upload, Cloud, User, Activity, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
@@ -13,7 +13,7 @@ const Navbar = () => {
     { path: '/', icon: Home, label: t('navigation.home') },
     { path: '/sugarcane-disease', icon: Activity, label: t('navigation.sugarcaneDisease') },
     { path: '/query', icon: MessageCircle, label: t('navigation.ask') },
-    { path: '/upload', icon: Upload, label: t('navigation.upload') },
+    { path: '/schemes', icon: Building2, label: t('navigation.schemes') },
     { path: '/weather', icon: Cloud, label: t('navigation.weather') },
     { path: '/profile', icon: User, label: t('navigation.profile') },
   ];
@@ -53,11 +53,11 @@ const Navbar = () => {
             ))}
             {user ? (
               <button onClick={logout} className="px-3 py-2 text-sm font-semibold text-red-600 hover:text-red-700">
-                Logout
+                {t('navigation.logout')}
               </button>
             ) : (
               <Link to="/login" className="px-4 py-2 text-sm font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow">
-                Login
+                {t('navigation.login')}
               </Link>
             )}
           </div>
@@ -66,11 +66,11 @@ const Navbar = () => {
           <div className="md:hidden">
             {user ? (
               <button onClick={logout} className="text-xs text-red-600 font-semibold px-2 py-1">
-                Logout
+                {t('navigation.logout')}
               </button>
             ) : (
               <Link to="/login" className="text-xs font-bold bg-emerald-600 text-white px-3 py-1.5 rounded">
-                Login
+                {t('navigation.login')}
               </Link>
             )}
           </div>

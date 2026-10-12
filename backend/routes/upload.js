@@ -444,7 +444,9 @@ const getOpenRouterImageAnalysis = async ({ buffer, mimeType, language = 'en', l
   return { raw: content, parsed, modelUsed: model };
 };
 
-router.post('/', auth, upload.single('image'), async (req, res) => {
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+
+router.post('/', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Image file is required' });
@@ -457,34 +459,70 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     let modelUsed = null;
     let analysisEngine = null;
     let provider = 'unknown';
-    try {
-      const preferredProvider = String(process.env.VISION_PROVIDER || '').trim().toLowerCase();
-      const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
-      const hasGemini = Boolean(process.env.GEMINI_API_KEY);
-      const hasGroq = Boolean(process.env.GROQ_API_KEY);
 
-      let useProvider = preferredProvider || (hasOpenRouter ? 'openrouter' : hasGroq ? 'groq' : hasGemini ? 'gemini' : 'groq');
-      if (preferredProvider && !['openrouter', 'gemini', 'groq'].includes(useProvider)) {
-        useProvider = 'openrouter';
+    // 1. Try Cloud Vision API if API keys are configured
+    const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
+    const hasGemini = Boolean(process.env.GEMINI_API_KEY);
+    const hasGroq = Boolean(process.env.GROQ_API_KEY);
+
+    if (hasOpenRouter || hasGemini || hasGroq) {
+      try {
+        const preferredProvider = String(process.env.VISION_PROVIDER || '').trim().toLowerCase();
+        let useProvider = preferredProvider || (hasOpenRouter ? 'openrouter' : hasGemini ? 'gemini' : 'groq');
+        if (preferredProvider && !['openrouter', 'gemini', 'groq'].includes(useProvider)) {
+          useProvider = 'openrouter';
+        }
+
+        provider = useProvider;
+        let result;
+        if (useProvider === 'openrouter') {
+          result = await getOpenRouterImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+          analysisEngine = 'openrouter-vision-json-v1';
+        } else if (useProvider === 'gemini') {
+          result = await getGeminiImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+          analysisEngine = 'gemini-vision-json-v1';
+        } else {
+          result = await getGroqImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+          analysisEngine = 'groq-vision-json-v1';
+        }
+
+        analysis = result?.parsed;
+        modelUsed = result?.modelUsed || modelUsed;
+      } catch (e) {
+        console.warn(`${provider} image analysis failed, checking local ML service fallback:`, e.message);
       }
+    }
 
-      provider = useProvider;
-      let result;
-      if (useProvider === 'openrouter') {
-        result = await getOpenRouterImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-        analysisEngine = 'openrouter-vision-json-v1';
-      } else if (useProvider === 'gemini') {
-        result = await getGeminiImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-        analysisEngine = 'gemini-vision-json-v1';
-      } else {
-        result = await getGroqImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-        analysisEngine = 'groq-vision-json-v1';
+    // 2. If Cloud Vision didn't yield a result, fallback to our trained ML inference service
+    if (!analysis) {
+      try {
+        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        const formData = new FormData();
+        formData.append('image', blob, req.file.originalname);
+
+        const mlResponse = await fetch(`${ML_SERVICE_URL}/predict`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (mlResponse.ok) {
+          const mlData = await mlResponse.json();
+          analysis = {
+            crop: 'Sugarcane',
+            issueType: 'disease',
+            disease: mlData.prediction?.class || 'Unknown',
+            confidence: mlData.prediction?.confidence || 0.4,
+            severity: mlData.recommendation?.severity || 'Moderate',
+            recommendation: mlData.recommendation?.summary || 'Follow crop protection best practices.',
+            treatment: (mlData.recommendation?.actions || []).join('; ') || 'Consult local agriculture specialist.',
+            sources: ['KrishSathi ML Sugarcane Classifier']
+          };
+          analysisEngine = 'krishsathi-ml-service';
+          modelUsed = mlData.model_version || 'sugarcane-resnet-v1';
+        }
+      } catch (mlErr) {
+        console.warn('ML Service fallback failed:', mlErr.message);
       }
-
-      analysis = result?.parsed;
-      modelUsed = result?.modelUsed || modelUsed;
-    } catch (e) {
-      console.error(`${provider} image analysis failed:`, e.message);
     }
 
     const confidence = clamp01(analysis?.confidence);
@@ -493,11 +531,11 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
 
     const recommendation =
       String(analysis?.recommendation ||
-        'Photo received, but I cannot confirm the issue from this image. Please upload a clearer close-up photo of the affected part (leaf/fruit/stem) in good daylight, and tell crop name + crop age.');
+        'Photo received, but issue cannot be confirmed. Please upload a clearer close-up photo of the affected leaf in good daylight.');
 
     const treatment = String(
       analysis?.treatment ||
-        'Until confirmed: remove badly affected parts, avoid over-watering, and monitor daily. For chemical spray, confirm with local Krishi Bhavan and follow label dose.'
+        'Remove severely damaged parts, avoid waterlogging, and verify with local Krishi Bhavan before applying chemicals.'
     );
 
     const sources = Array.isArray(analysis?.sources) && analysis.sources.length
@@ -507,32 +545,41 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     const modelUsedResponse = modelUsed || 'unknown';
     const analysisEngineResponse = analysisEngine || 'fallback-v1';
 
-    const result = await Upload.create({
-      userId: req.user.id,
+    let savedId = Date.now().toString();
+    if (req.user && req.user.id) {
+      try {
+        const result = await Upload.create({
+          userId: req.user.id,
+          fileName: req.file.originalname,
+          mimeType: req.file.mimetype,
+          size: req.file.size,
+          disease,
+          confidence: confidence ?? 0.35,
+          recommendation,
+          treatment,
+          severity,
+          sources
+        });
+        savedId = result._id;
+      } catch (dbErr) {
+        console.warn('Could not save upload record to database:', dbErr.message);
+      }
+    }
+
+    return res.status(200).json({
+      id: savedId,
       fileName: req.file.originalname,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
       disease,
       confidence: confidence ?? 0.35,
       recommendation,
       treatment,
       severity,
-      sources
-    });
-
-    return res.status(201).json({
-      id: result._id,
-      fileName: result.fileName,
-      disease: result.disease,
-      confidence: result.confidence,
-      recommendation: result.recommendation,
-      treatment: result.treatment,
-      severity: result.severity,
-      sources: result.sources,
+      sources,
       analysisEngine: analysisEngineResponse,
       modelUsed: modelUsedResponse
     });
   } catch (error) {
+    console.error('Upload processing error:', error);
     return res.status(500).json({ message: 'Failed to process image' });
   }
 });
