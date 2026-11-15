@@ -32,8 +32,8 @@ const optionalAuth = (req, res, next) => {
   return next();
 };
 
-// POST /api/disease/predict - Predict sugarcane leaf disease & persist if authenticated
-router.post('/predict', optionalAuth, upload.single('image'), async (req, res) => {
+// POST /api/disease/predict and POST /api/disease - Predict sugarcane leaf disease & persist if authenticated
+const handleDiseasePredict = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -143,7 +143,10 @@ router.post('/predict', optionalAuth, upload.single('image'), async (req, res) =
       message: 'Unable to analyze the sugarcane leaf image right now. Please try again.'
     });
   }
-});
+};
+
+router.post('/predict', optionalAuth, upload.single('image'), handleDiseasePredict);
+router.post('/', optionalAuth, upload.single('image'), handleDiseasePredict);
 
 // GET /api/disease/history - Fetch diagnosis history for authenticated user
 router.get('/history', auth, async (req, res) => {

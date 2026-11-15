@@ -1,9 +1,27 @@
 const express = require('express');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
 const Upload = require('../models/Upload');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
+
+// Optional auth helper: attaches req.user if Authorization header is provided
+const optionalAuth = (req, res, next) => {
+  const header = req.header('Authorization');
+  if (!header || !header.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
+  const token = header.replace('Bearer ', '').trim();
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_jwt_secret');
+    req.user = decoded;
+  } catch (error) {
+    req.user = null;
+  }
+  return next();
+};
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -444,131 +462,159 @@ const getOpenRouterImageAnalysis = async ({ buffer, mimeType, language = 'en', l
   return { raw: content, parsed, modelUsed: model };
 };
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001';
 
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', optionalAuth, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'Image file is required' });
+      return res.status(400).json({
+        success: false,
+        status: 'invalid_image',
+        valid_leaf: false,
+        message: 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
+      });
     }
 
     const language = req.body?.language || 'en';
     const location = req.body?.location || 'India';
 
     let analysis = null;
-    let modelUsed = null;
-    let analysisEngine = null;
-    let provider = 'unknown';
+    let modelUsed = 'KrishSathi-MobileNetV3-Small-v1';
+    let analysisEngine = 'krishsathi-ml-service';
 
-    // 1. Try Cloud Vision API if API keys are configured
-    const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
-    const hasGemini = Boolean(process.env.GEMINI_API_KEY);
-    const hasGroq = Boolean(process.env.GROQ_API_KEY);
+    // 1. PRIMARY: Query Trained MobileNetV3-Small ML inference service
+    try {
+      const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+      const formData = new FormData();
+      formData.append('image', blob, req.file.originalname);
 
-    if (hasOpenRouter || hasGemini || hasGroq) {
-      try {
-        const preferredProvider = String(process.env.VISION_PROVIDER || '').trim().toLowerCase();
-        let useProvider = preferredProvider || (hasOpenRouter ? 'openrouter' : hasGemini ? 'gemini' : 'groq');
-        if (preferredProvider && !['openrouter', 'gemini', 'groq'].includes(useProvider)) {
-          useProvider = 'openrouter';
+      const mlResponse = await fetch(`${ML_SERVICE_URL}/predict`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (mlResponse.ok) {
+        const mlData = await mlResponse.json();
+
+        // Image validation check from ML service
+        if (mlData.status === 'invalid_image' || mlData.valid_leaf === false || !mlData.success) {
+          return res.status(400).json({
+            success: false,
+            status: 'invalid_image',
+            valid_leaf: false,
+            message: mlData.message || 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
+          });
         }
 
-        provider = useProvider;
-        let result;
-        if (useProvider === 'openrouter') {
-          result = await getOpenRouterImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-          analysisEngine = 'openrouter-vision-json-v1';
-        } else if (useProvider === 'gemini') {
-          result = await getGeminiImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-          analysisEngine = 'gemini-vision-json-v1';
-        } else {
-          result = await getGroqImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
-          analysisEngine = 'groq-vision-json-v1';
-        }
-
-        analysis = result?.parsed;
-        modelUsed = result?.modelUsed || modelUsed;
-      } catch (e) {
-        console.warn(`${provider} image analysis failed, checking local ML service fallback:`, e.message);
+        const rec = mlData.recommendation || {};
+        analysis = {
+          crop: 'Sugarcane',
+          issueType: 'disease',
+          disease: mlData.prediction?.class || 'Healthy',
+          confidence: mlData.prediction?.confidence || 0.95,
+          isConfident: mlData.prediction?.is_confident ?? true,
+          severity: rec.severity || 'Moderate',
+          symptoms: rec.symptoms || '',
+          whyIdentified: mlData.prediction?.why_identified || rec.why_identified || '',
+          causes: rec.causes || '',
+          conditionsResponsible: rec.conditions_responsible || '',
+          recommendation: rec.summary || 'Follow verified agronomic management practices.',
+          treatment: Array.isArray(rec.immediate_treatment) ? rec.immediate_treatment.join('; ') : (rec.immediate_treatment || ''),
+          immediateTreatmentList: rec.immediate_treatment || [],
+          prevention: rec.prevention_methods || [],
+          agriculturalPractices: rec.agricultural_practices || [],
+          fieldManagement: rec.field_management || '',
+          products: mlData.products || null,
+          sources: ['KrishSathi MobileNetV3-Small AI', 'ICAR-SBI Coimbatore', 'VSI Pune']
+        };
+        modelUsed = mlData.model_version || 'MobileNetV3_Small-v1.0';
       }
+    } catch (mlErr) {
+      console.warn('ML Service unreachable, checking cloud fallback:', mlErr.message);
     }
 
-    // 2. If Cloud Vision didn't yield a result, fallback to our trained ML inference service
+    // 2. FALLBACK ONLY: If local ML service was unreachable, check cloud vision
     if (!analysis) {
-      try {
-        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
-        const formData = new FormData();
-        formData.append('image', blob, req.file.originalname);
+      const hasOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
+      const hasGemini = Boolean(process.env.GEMINI_API_KEY);
+      const hasGroq = Boolean(process.env.GROQ_API_KEY);
 
-        const mlResponse = await fetch(`${ML_SERVICE_URL}/predict`, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (mlResponse.ok) {
-          const mlData = await mlResponse.json();
-          if (mlData.status === 'invalid_image' || mlData.valid_leaf === false || !mlData.success) {
-            return res.status(400).json({
-              success: false,
-              status: 'invalid_image',
-              valid_leaf: false,
-              message: mlData.message || 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
-            });
+      if (hasOpenRouter || hasGemini || hasGroq) {
+        try {
+          const preferredProvider = String(process.env.VISION_PROVIDER || '').trim().toLowerCase();
+          let useProvider = preferredProvider || (hasOpenRouter ? 'openrouter' : hasGemini ? 'gemini' : 'groq');
+          let result;
+          if (useProvider === 'openrouter') {
+            result = await getOpenRouterImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+            analysisEngine = 'openrouter-vision-json-v1';
+          } else if (useProvider === 'gemini') {
+            result = await getGeminiImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+            analysisEngine = 'gemini-vision-json-v1';
+          } else {
+            result = await getGroqImageAnalysis({ buffer: req.file.buffer, mimeType: req.file.mimetype, language, location });
+            analysisEngine = 'groq-vision-json-v1';
           }
-          analysis = {
-            crop: 'Sugarcane',
-            issueType: 'disease',
-            disease: mlData.prediction?.class || 'Unknown',
-            confidence: mlData.prediction?.confidence || 0.4,
-            severity: mlData.recommendation?.severity || 'Moderate',
-            recommendation: mlData.recommendation?.summary || 'Follow crop protection best practices.',
-            treatment: (mlData.recommendation?.actions || []).join('; ') || 'Consult local agriculture specialist.',
-            sources: ['KrishSathi ML Sugarcane Classifier']
-          };
-          analysisEngine = 'krishsathi-ml-service';
-          modelUsed = mlData.model_version || 'sugarcane-resnet-v1';
+
+          if (result?.parsed) {
+            analysis = result.parsed;
+            modelUsed = result.modelUsed || 'cloud-vision';
+          }
+        } catch (e) {
+          console.warn('Cloud vision fallback also failed:', e.message);
         }
-      } catch (mlErr) {
-        console.warn('ML Service fallback failed:', mlErr.message);
       }
     }
 
-    const confidence = clamp01(analysis?.confidence);
-    const disease = String(analysis?.disease || 'Unknown');
-    const severity = normalizeSeverity(analysis?.severity);
+    if (!analysis) {
+      return res.status(503).json({
+        success: false,
+        message: 'Disease prediction service is temporarily unavailable. Please ensure ML service is running.'
+      });
+    }
 
-    const recommendation =
-      String(analysis?.recommendation ||
-        'Photo received, but issue cannot be confirmed. Please upload a clearer close-up photo of the affected leaf in good daylight.');
-
-    const treatment = String(
-      analysis?.treatment ||
-        'Remove severely damaged parts, avoid waterlogging, and verify with local Krishi Bhavan before applying chemicals.'
-    );
-
-    const sources = Array.isArray(analysis?.sources) && analysis.sources.length
-      ? analysis.sources.map((s) => String(s))
-      : ['Krishi Bhavan'];
-
-    const modelUsedResponse = modelUsed || 'unknown';
-    const analysisEngineResponse = analysisEngine || 'fallback-v1';
+    const confidence = clamp01(analysis.confidence) ?? 0.85;
+    const disease = String(analysis.disease || 'Unknown');
+    const severity = normalizeSeverity(analysis.severity);
+    const recommendation = String(analysis.recommendation || 'Follow crop protection guidelines.');
+    const treatment = String(analysis.treatment || 'Consult local Krishi Bhavan officer for field diagnosis.');
+    const sources = Array.isArray(analysis.sources) && analysis.sources.length
+      ? analysis.sources
+      : ['KrishSathi Sugarcane AI', 'ICAR-SBI Coimbatore'];
 
     let savedId = Date.now().toString();
+
+    // Persist diagnosis in MongoDB if user is authenticated
     if (req.user && req.user.id) {
       try {
-        const result = await Upload.create({
+        const base64Data = req.file.buffer.length <= 1.5 * 1024 * 1024
+          ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+          : '';
+
+        const saved = await Upload.create({
           userId: req.user.id,
           fileName: req.file.originalname,
           mimeType: req.file.mimetype,
+          imageData: base64Data,
           size: req.file.size,
+          crop: 'sugarcane',
           disease,
-          confidence: confidence ?? 0.35,
-          recommendation,
-          treatment,
+          confidence,
+          isConfident: analysis.isConfident ?? true,
           severity,
-          sources
+          symptoms: analysis.symptoms || '',
+          whyIdentified: analysis.whyIdentified || '',
+          causes: analysis.causes || '',
+          conditionsResponsible: analysis.conditionsResponsible || '',
+          summary: recommendation,
+          treatment: analysis.immediateTreatmentList || [treatment],
+          agriculturalPractices: analysis.agriculturalPractices || [],
+          prevention: analysis.prevention || [],
+          fieldManagement: analysis.fieldManagement || '',
+          products: analysis.products || { disease_treatment_products: [], crop_nutrition_fertilizers: [] },
+          sources,
+          modelVersion: modelUsed
         });
-        savedId = result._id;
+        savedId = saved._id;
       } catch (dbErr) {
         console.warn('Could not save upload record to database:', dbErr.message);
       }
@@ -577,18 +623,29 @@ router.post('/', upload.single('image'), async (req, res) => {
     return res.status(200).json({
       id: savedId,
       fileName: req.file.originalname,
+      crop: 'Sugarcane',
       disease,
-      confidence: confidence ?? 0.35,
+      confidence,
+      isConfident: analysis.isConfident ?? true,
+      severity,
+      symptoms: analysis.symptoms || '',
+      whyIdentified: analysis.whyIdentified || '',
       recommendation,
       treatment,
-      severity,
+      immediateTreatmentList: analysis.immediateTreatmentList || [],
+      prevention: analysis.prevention || [],
+      agriculturalPractices: analysis.agriculturalPractices || [],
+      products: analysis.products || null,
       sources,
-      analysisEngine: analysisEngineResponse,
-      modelUsed: modelUsedResponse
+      analysisEngine,
+      modelUsed
     });
   } catch (error) {
     console.error('Upload processing error:', error);
-    return res.status(500).json({ message: 'Failed to process image' });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process image. Please try again.'
+    });
   }
 });
 

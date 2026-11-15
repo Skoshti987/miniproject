@@ -3,7 +3,7 @@ import json
 import torch
 import torch.nn as nn
 from torchvision import transforms, models
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageOps
 import numpy as np
 
 MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models'))
@@ -446,12 +446,44 @@ class SugarcanePredictor:
         return True, ""
 
     def predict_image(self, image_input):
-        if isinstance(image_input, str):
-            image = Image.open(image_input).convert('RGB')
-        elif isinstance(image_input, Image.Image):
-            image = image_input.convert('RGB')
-        else:
-            image = Image.open(image_input).convert('RGB')
+        try:
+            if isinstance(image_input, str):
+                image = Image.open(image_input)
+            elif isinstance(image_input, Image.Image):
+                image = image_input
+            else:
+                image = Image.open(image_input)
+
+            # Auto-orient using EXIF data (corrects orientation from mobile phone cameras)
+            try:
+                image = ImageOps.exif_transpose(image)
+            except Exception:
+                pass
+
+            # Handle transparency (RGBA, LA, P palette) cleanly without black artifacts
+            if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
+                image = image.convert('RGBA')
+                bg = Image.new('RGB', image.size, (255, 255, 255))
+                bg.paste(image, mask=image.split()[-1])
+                image = bg
+            else:
+                image = image.convert('RGB')
+        except Exception:
+            return {
+                "success": False,
+                "crop": "sugarcane",
+                "status": "invalid_image",
+                "valid_leaf": False,
+                "disease": None,
+                "confidence": None,
+                "severity": None,
+                "treatment": None,
+                "message": "Invalid or unreadable image file. Please upload a clear JPG, PNG, or WEBP sugarcane leaf image.",
+                "prediction": None,
+                "recommendation": None,
+                "products": None,
+                "model_version": self.model_version
+            }
 
         # 1. Validation Step
         is_valid_leaf, validation_err = self.validate_leaf_image(image)
