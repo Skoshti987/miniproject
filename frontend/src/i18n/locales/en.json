@@ -1,32 +1,36 @@
 {
   "app": {
     "name": "KrishSathi",
-    "tagline": "AI-Powered Sugarcane Farming Assistant",
-    "specializedBadge": "Specialized Sugarcane AI Assistant"
+    "tagline": "Precision Agricultural Intelligence",
+    "specializedBadge": "Specialized Sugarcane AI Assistant",
+    "badge": "Sugarcane AI",
+    "portal": "Precision Sugarcane AI Platform",
+    "verifiedStandard": "Verified Agricultural Standards (ICAR-SBI • VSI Aligned)"
   },
   "navigation": {
-    "home": "Home",
-    "sugarcaneDisease": "Sugarcane Disease AI",
-    "ask": "Sugarcane Chatbot",
+    "home": "Dashboard",
+    "sugarcaneDisease": "Disease AI",
+    "ask": "AI Chat",
     "upload": "General Plant Diagnosis",
-    "weather": "Sugarcane Weather",
-    "schemes": "Government Schemes",
+    "weather": "Weather",
+    "schemes": "Schemes",
     "profile": "Profile",
     "help": "Help",
-    "login": "Login",
-    "logout": "Logout"
+    "login": "Farmer Sign In",
+    "logout": "Logout",
+    "history": "History"
   },
   "home": {
-    "welcome": "KrishSathi Sugarcane Assistant",
-    "subtitle": "AI-Powered Leaf Disease Detection & Expert Sugarcane Farming Advisory",
+    "welcome": "Welcome to KrishSathi Sugarcane AI",
+    "subtitle": "Real-time crop disease diagnosis, ICAR-verified agronomic treatments, sugarcane variety management, and localized weather intelligence.",
     "sugarcaneDiseaseNav": "Sugarcane Disease Detection",
     "voiceQuery": "Ask with Voice",
     "textQuery": "Ask KrishSathi",
     "uploadImage": "Upload Leaf Image",
     "weatherInfo": "Sugarcane Weather & Advisory",
     "quickActions": "Sugarcane Farmer Tools",
-    "diagnoseBtn": "Diagnose Leaf Disease",
-    "askAiBtn": "Ask KrishSathi AI",
+    "diagnoseBtn": "Diagnose Sugarcane Leaf",
+    "askAiBtn": "Ask Sugarcane AI",
     "featuredTitle": "Sugarcane Leaf Disease AI Diagnosis",
     "featuredDesc": "Trained ML model identifies Healthy leaves, Red Rot, Mosaic, Rust, and Yellow Leaf Virus with real-time actionable field treatment.",
     "tryDiseaseAi": "Try Disease AI",
@@ -35,22 +39,33 @@
       "classes": "Sugarcane Classes",
       "farmers": "Farmers Supported",
       "accuracy": "Model Accuracy",
-      "languages": "Languages"
+      "languages": "Languages",
+      "totalDiagnoses": "Total Diagnoses",
+      "totalQueries": "AI Queries Asked",
+      "sugarcaneArea": "Sugarcane Area",
+      "acres": "Acres",
+      "variety": "Active Variety",
+      "recordedInDb": "Recorded in MongoDB",
+      "conversationsStored": "Conversations stored"
     },
     "descriptions": {
-      "disease": "Upload sugarcane leaf photos to detect Red Rot, Mosaic, Rust & Yellow Leaf",
-      "text": "Sugarcane-aware chatbot for tillering, soil, diseases, & fertilizer advice",
+      "disease": "Upload leaf photos to diagnose Red Rot, Rust, Mosaic, and Yellow Leaf disease with verified ICAR treatments.",
+      "text": "Ask questions on sugarcane varieties, fertilizer scheduling, irrigation, pests, and sugar recovery.",
       "voice": "Ask sugarcane questions using voice in English, Hindi, Marathi, Malayalam",
-      "weather": "Sugarcane field weather forecast, humidity risks & irrigation advisories"
-    }
+      "weather": "Real-time micro-weather forecasts and agro-climatic spray/irrigation advisories for your farm.",
+      "history": "View and manage all previous leaf disease analyses, confidence scores, and custom recommendations."
+    },
+    "welcomeFarmer": "Welcome back",
+    "dashboardTitle": "Your Live Farm Intelligence Dashboard",
+    "viewHistory": "View All History"
   },
   "sugarcane": {
     "title": "Sugarcane Leaf Disease AI Diagnosis",
-    "subtitle": "Upload or capture a sugarcane leaf photo to instantly detect diseases like Red Rot, Mosaic, Rust, or Yellow Leaf.",
-    "analyzeBtn": "Analyze Sugarcane Image",
+    "subtitle": "Upload a sugarcane leaf photo to detect Red Rot, Rust, Mosaic, or Yellow Leaf disease with ICAR-verified remedies.",
+    "analyzeBtn": "Analyze Sugarcane Leaf",
     "analyzing": "Analyzing Sugarcane Leaf...",
     "cropLabel": "Crop",
-    "cropValue": "Sugarcane (Saccharum officinarum)",
+    "cropValue": "🌱 Sugarcane (Saccharum officinarum)",
     "predictedDisease": "Detected Condition",
     "confidenceLabel": "AI Confidence",
     "severityLabel": "Severity Level",
@@ -58,7 +73,7 @@
     "preventionHeader": "Prevention & Long-term Care",
     "askChatbotBtn": "Ask KrishSathi About This Disease",
     "clearBtn": "Analyze Another Image",
-    "choosePhoto": "Choose Photo / Camera",
+    "choosePhoto": "Choose Leaf Photo",
     "dropHere": "Drop leaf image here...",
     "diseaseDescription": "Disease Description",
     "lowConfidenceTitle": "Low Prediction Confidence",
@@ -142,7 +157,33 @@
       "Uncertain": [
         "Take multiple photos from different angles if symptoms persist."
       ]
-    }
+    },
+    "dragDropTitle": "Drop sugarcane leaf image here",
+    "dragDropSubtitle": "or click to browse from your device",
+    "supportedFormats": "Supports JPEG, PNG, WEBP up to 10MB",
+    "reAnalyzeBtn": "Re-Analyze Image",
+    "anotherPhotoBtn": "Choose Another Photo",
+    "invalidImageTitle": "Invalid Image!",
+    "invalidImageNotice": "Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.",
+    "invalidImageNote": "Note: This AI diagnostic tool is strictly specialized for sugarcane leaves. Uploading humans, animals, other crops (rice, wheat, cotton), objects, or blurred images will be rejected.",
+    "targetCrop": "Target Crop",
+    "diagnosticResult": "Diagnostic Result",
+    "aiConfidence": "AI Confidence",
+    "whyIdentified": "Why AI Identified This Disease",
+    "symptomsTitle": "Symptoms & Visible Signs",
+    "causesTitle": "Causes & Responsible Conditions",
+    "treatmentTitle": "Immediate Field Treatments (ICAR / VSI Aligned)",
+    "practicesTitle": "Recommended Agricultural Practices",
+    "preventionTitle": "Prevention Methods",
+    "fieldMgmtTitle": "Field Management & Irrigation",
+    "productsTitle": "Official Product & Fertilizer Recommendations",
+    "howItWorks": "How Sugarcane AI Works",
+    "step1": "Step 1: Upload Sugarcane Leaf",
+    "step1Desc": "Take a clear photo of the affected sugarcane leaf in natural daylight.",
+    "step2": "Step 2: Instant Leaf Validation",
+    "step2Desc": "Multi-stage AI checks confirm the image is a genuine sugarcane leaf.",
+    "step3": "Step 3: Verified ICAR Treatments",
+    "step3Desc": "Receive exact dosages, prevention steps, and genuine purchasing links."
   },
   "query": {
     "title": "KrishSathi AI Sugarcane Assistant",
@@ -279,5 +320,52 @@
       "avoidWet": "🚫 Avoid Irrigation: Field Has Adequate or Excess Moisture",
       "insufficient": "ℹ️ Insufficient Information to Prescribe Exact Watering"
     }
+  },
+  "languages": {
+    "en": "English",
+    "mr": "मराठी (Marathi)",
+    "hi": "हिंदी (Hindi)",
+    "ml": "മലയാളം (Malayalam)"
+  },
+  "login": {
+    "signInTab": "Farmer Sign In",
+    "signUpTab": "Create Farm Account",
+    "welcomeBack": "Welcome Back, Sugarcane Grower",
+    "welcomeSubtitle": "Access your farm diagnostics, AI crop chat, and disease history.",
+    "createTitle": "Register Your Sugarcane Farm",
+    "createSubtitle": "Start using precision AI to protect and maximize your sugarcane yield.",
+    "quickDemo": "Quick Evaluation Access",
+    "instantDemoBtn": "Instant Demo Farmer Login",
+    "demoProfileDesc": "Log in instantly with a pre-configured Kolhapur sugarcane farm profile (Sayali Koshti • Co 86032 • 4.5 Acres).",
+    "orCredentials": "Or continue with credentials",
+    "fullName": "Full Farmer Name",
+    "fullNamePlaceholder": "e.g. Sayali Hanmant Koshti",
+    "mobileNumber": "Mobile Number",
+    "mobilePlaceholder": "e.g. 9876543210",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "signInBtn": "Sign In to Dashboard",
+    "signUpBtn": "Complete Registration & Open Dashboard",
+    "processing": "Processing Securely...",
+    "dontHaveAccount": "Don't have an account yet?",
+    "createFreeAccount": "Create a free farm account",
+    "alreadyRegistered": "Already registered?",
+    "signInHere": "Sign in here",
+    "disclaimer": "KrishSathi Sugarcane AI • Designed for Precision Agronomy & Sugar Factories"
+  },
+  "history": {
+    "title": "Sugarcane Disease Diagnosis History",
+    "subtitle": "All previous sugarcane leaf analyses and customized treatment plans saved securely in MongoDB.",
+    "emptyTitle": "No Diagnoses Yet",
+    "emptyDesc": "Upload your first sugarcane leaf photo to start tracking crop health records.",
+    "diagnoseNow": "Diagnose Sugarcane Leaf Now",
+    "filterAll": "All Diagnoses",
+    "date": "Date & Time",
+    "disease": "Disease",
+    "confidence": "Confidence",
+    "severity": "Severity",
+    "actions": "Actions",
+    "viewDetails": "View Full Treatment"
   }
 }

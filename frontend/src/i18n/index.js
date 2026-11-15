@@ -20,7 +20,8 @@ i18n
   .init({
     resources,
     fallbackLng: 'en',
-    debug: process.env.NODE_ENV === 'development',
+    load: 'languageOnly',
+    debug: false,
     interpolation: {
       escapeValue: false
     },

@@ -74,7 +74,7 @@ router.post('/predict', optionalAuth, upload.single('image'), async (req, res) =
     const predictionData = await mlResponse.json();
 
     // Check if the ML service identified an invalid or non-sugarcane image
-    if (predictionData.status === 'invalid_image' || predictionData.valid_leaf === false) {
+    if (predictionData.status === 'invalid_image' || predictionData.valid_leaf === false || !predictionData.success || !predictionData.prediction) {
       return res.json({
         success: false,
         status: 'invalid_image',
@@ -83,7 +83,7 @@ router.post('/predict', optionalAuth, upload.single('image'), async (req, res) =
         confidence: null,
         severity: null,
         treatment: null,
-        message: 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
+        message: predictionData.message || 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
       });
     }
 

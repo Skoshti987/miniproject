@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 const Login = () => {
+  const { t } = useTranslation();
   const { user, loading: authLoading, loginWithEmailPassword, signupWithEmailPassword } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -110,7 +112,6 @@ const Login = () => {
         
         {/* Left Side: Agricultural Brand Showcase */}
         <div className="lg:col-span-5 bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
-          {/* Subtle Decorative Elements */}
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-700/20 blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-teal-500/10 blur-3xl pointer-events-none" />
 
@@ -118,25 +119,27 @@ const Login = () => {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-emerald-700/60 border border-emerald-500/30 text-emerald-200 text-xs font-bold mb-6 backdrop-blur-sm">
               <Sparkles size={14} className="text-yellow-400" />
-              <span>Precision Sugarcane AI Platform</span>
+              <span>{t('app.portal', { defaultValue: 'Precision Sugarcane AI Platform' })}</span>
             </div>
 
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg shrink-0">
                 <span className="text-2xl">🌾</span>
               </div>
               <div>
                 <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-2">
-                  KrishSathi
+                  {t('app.name', { defaultValue: 'KrishSathi' })}
                 </h1>
                 <p className="text-xs text-emerald-300 font-semibold uppercase tracking-wider">
-                  Sugarcane Agronomy & Disease Intelligence
+                  {t('app.tagline', { defaultValue: 'Sugarcane Agronomy & Disease Intelligence' })}
                 </p>
               </div>
             </div>
 
             <p className="text-emerald-100/90 text-sm leading-relaxed mb-8">
-              A comprehensive agricultural intelligence system designed specifically for sugarcane growers, agronomy officers, and sugar factories.
+              {t('home.subtitle', {
+                defaultValue: 'A comprehensive agricultural intelligence system designed specifically for sugarcane growers, agronomy officers, and sugar factories.'
+              })}
             </p>
 
             {/* Feature Highlights */}
@@ -146,9 +149,13 @@ const Login = () => {
                   <Activity size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">AI Leaf Disease Diagnostics</h3>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('navigation.sugarcaneDisease', { defaultValue: 'AI Leaf Disease Diagnostics' })}
+                  </h3>
                   <p className="text-xs text-emerald-200/80 leading-snug">
-                    Instant detection of Red Rot, Rust, Mosaic, and Yellow Leaf with multi-stage non-sugarcane image rejection.
+                    {t('home.descriptions.disease', {
+                      defaultValue: 'Instant detection of Red Rot, Rust, Mosaic, and Yellow Leaf with multi-stage non-sugarcane image rejection.'
+                    })}
                   </p>
                 </div>
               </div>
@@ -170,9 +177,13 @@ const Login = () => {
                   <MessageSquare size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">24/7 Multilingual AI Agronomist</h3>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('navigation.ask', { defaultValue: '24/7 Multilingual AI Agronomist' })}
+                  </h3>
                   <p className="text-xs text-emerald-200/80 leading-snug">
-                    Expert answers on planting, fertilizer schedules, ratoon management, and sugar recovery in English, Hindi, and Marathi.
+                    {t('home.descriptions.text', {
+                      defaultValue: 'Expert answers on planting, fertilizer schedules, ratoon management, and sugar recovery in English, Hindi, and Marathi.'
+                    })}
                   </p>
                 </div>
               </div>
@@ -182,9 +193,13 @@ const Login = () => {
                   <History size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Persistent Cloud Farm Records</h3>
+                  <h3 className="text-sm font-bold text-white">
+                    {t('navigation.history', { defaultValue: 'Persistent Cloud Farm Records' })}
+                  </h3>
                   <p className="text-xs text-emerald-200/80 leading-snug">
-                    MongoDB-backed diagnostic history, farm acreage tracking, and crop advisory for seamless continuity.
+                    {t('home.descriptions.history', {
+                      defaultValue: 'MongoDB-backed diagnostic history, farm acreage tracking, and crop advisory for seamless continuity.'
+                    })}
                   </p>
                 </div>
               </div>
@@ -195,7 +210,7 @@ const Login = () => {
           <div className="relative z-10 pt-6 mt-6 border-t border-emerald-700/50 flex items-center justify-between text-xs text-emerald-200">
             <span className="flex items-center gap-1.5 font-semibold">
               <CheckCircle2 size={16} className="text-emerald-400" />
-              Verified Agricultural Standards
+              {t('app.verifiedStandard', { defaultValue: 'Verified Agricultural Standards' })}
             </span>
             <span className="text-emerald-300 font-mono text-[11px]">ICAR-SBI • VSI Aligned</span>
           </div>
@@ -216,7 +231,7 @@ const Login = () => {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <span>Farmer Sign In</span>
+                <span>{t('login.signInTab', { defaultValue: 'Farmer Sign In' })}</span>
               </button>
               <button
                 type="button"
@@ -227,19 +242,21 @@ const Login = () => {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <span>Create Farm Account</span>
+                <span>{t('login.signUpTab', { defaultValue: 'Create Farm Account' })}</span>
               </button>
             </div>
 
             {/* Title & Subtitle */}
             <div className="mb-6">
               <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                {mode === 'login' ? 'Welcome Back, Sugarcane Grower' : 'Register Your Sugarcane Farm'}
+                {mode === 'login' 
+                  ? t('login.welcomeBack', { defaultValue: 'Welcome Back, Sugarcane Grower' })
+                  : t('login.createTitle', { defaultValue: 'Register Your Sugarcane Farm' })}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
                 {mode === 'login'
-                  ? 'Access your farm diagnostics, AI crop chat, and disease history.'
-                  : 'Start using precision AI to protect and maximize your sugarcane yield.'}
+                  ? t('login.welcomeSubtitle', { defaultValue: 'Access your farm diagnostics, AI crop chat, and disease history.' })
+                  : t('login.createSubtitle', { defaultValue: 'Start using precision AI to protect and maximize your sugarcane yield.' })}
               </p>
             </div>
 
@@ -248,14 +265,16 @@ const Login = () => {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center gap-1.5">
                   <Zap size={14} className="text-emerald-600 fill-emerald-600" />
-                  Quick Evaluation Access
+                  {t('login.quickDemo', { defaultValue: 'Quick Evaluation Access' })}
                 </span>
                 <span className="text-[11px] bg-emerald-200/70 text-emerald-900 px-2 py-0.5 rounded-full font-bold">
                   1-Click Demo
                 </span>
               </div>
               <p className="text-xs text-gray-600 mb-3">
-                Log in instantly with a pre-configured Kolhapur sugarcane farm profile (Sayali Koshti • Co 86032 • 4.5 Acres).
+                {t('login.demoProfileDesc', {
+                  defaultValue: 'Log in instantly with a pre-configured Kolhapur sugarcane farm profile (Sayali Koshti • Co 86032 • 4.5 Acres).'
+                })}
               </p>
               <button
                 type="button"
@@ -264,7 +283,7 @@ const Login = () => {
                 className="w-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Sparkles size={14} className="text-yellow-300" />
-                <span>Instant Demo Farmer Login</span>
+                <span>{t('login.instantDemoBtn', { defaultValue: 'Instant Demo Farmer Login' })}</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -273,7 +292,7 @@ const Login = () => {
             <div className="relative flex py-2 items-center mb-6">
               <div className="flex-grow border-t border-gray-200"></div>
               <span className="flex-shrink mx-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Or continue with credentials
+                {t('login.orCredentials', { defaultValue: 'Or continue with credentials' })}
               </span>
               <div className="flex-grow border-t border-gray-200"></div>
             </div>
@@ -292,7 +311,7 @@ const Login = () => {
                 <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                      Full Farmer Name
+                      {t('login.fullName', { defaultValue: 'Full Farmer Name' })}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -300,7 +319,7 @@ const Login = () => {
                       </div>
                       <input
                         type="text"
-                        placeholder="e.g. Sayali Hanmant Koshti"
+                        placeholder={t('login.fullNamePlaceholder', { defaultValue: 'e.g. Sayali Hanmant Koshti' })}
                         required
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -311,7 +330,7 @@ const Login = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                      Mobile Number
+                      {t('login.mobileNumber', { defaultValue: 'Mobile Number' })}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -319,7 +338,7 @@ const Login = () => {
                       </div>
                       <input
                         type="tel"
-                        placeholder="e.g. 9876543210"
+                        placeholder={t('login.mobilePlaceholder', { defaultValue: 'e.g. 9876543210' })}
                         value={mobileNumber}
                         onChange={(e) => setMobileNumber(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
@@ -331,7 +350,7 @@ const Login = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Email Address
+                  {t('login.email', { defaultValue: 'Email Address' })}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -350,7 +369,7 @@ const Login = () => {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Password
+                  {t('login.password', { defaultValue: 'Password' })}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -377,7 +396,7 @@ const Login = () => {
               {mode === 'signup' && (
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Confirm Password
+                    {t('login.confirmPassword', { defaultValue: 'Confirm Password' })}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -410,11 +429,15 @@ const Login = () => {
                 {submitting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Processing Securely...</span>
+                    <span>{t('login.processing', { defaultValue: 'Processing Securely...' })}</span>
                   </>
                 ) : (
                   <>
-                    <span>{mode === 'login' ? 'Sign In to Dashboard' : 'Complete Registration & Open Dashboard'}</span>
+                    <span>
+                      {mode === 'login'
+                        ? t('login.signInBtn', { defaultValue: 'Sign In to Dashboard' })
+                        : t('login.signUpBtn', { defaultValue: 'Complete Registration & Open Dashboard' })}
+                    </span>
                     <ArrowRight size={18} />
                   </>
                 )}
@@ -425,24 +448,24 @@ const Login = () => {
             <div className="mt-6 text-center text-xs text-gray-500">
               {mode === 'login' ? (
                 <p>
-                  Don't have an account yet?{' '}
+                  {t('login.dontHaveAccount', { defaultValue: "Don't have an account yet?" })}{' '}
                   <button
                     type="button"
                     onClick={() => { setMode('signup'); setError(''); }}
                     className="text-emerald-700 font-extrabold hover:underline"
                   >
-                    Create a free farm account
+                    {t('login.createFreeAccount', { defaultValue: 'Create a free farm account' })}
                   </button>
                 </p>
               ) : (
                 <p>
-                  Already registered?{' '}
+                  {t('login.alreadyRegistered', { defaultValue: 'Already registered?' })}{' '}
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setError(''); }}
                     className="text-emerald-700 font-extrabold hover:underline"
                   >
-                    Sign in here
+                    {t('login.signInHere', { defaultValue: 'Sign in here' })}
                   </button>
                 </p>
               )}
@@ -450,7 +473,7 @@ const Login = () => {
 
             {/* Agricultural disclaimer */}
             <div className="mt-8 pt-4 border-t border-gray-200 text-center text-[11px] text-gray-400">
-              KrishSathi Sugarcane AI • Designed for Precision Agronomy & Sugar Factories
+              {t('login.disclaimer', { defaultValue: 'KrishSathi Sugarcane AI • Designed for Precision Agronomy & Sugar Factories' })}
             </div>
 
           </div>

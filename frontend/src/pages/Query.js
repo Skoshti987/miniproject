@@ -26,13 +26,35 @@ const toSpeechLocale = (languageCode) => {
   return map[languageCode] || 'en-IN';
 };
 
-const SUGGESTED_QUESTIONS = [
-  "My sugarcane leaves are turning yellow. What should I do?",
-  "What is the recommended fertilizer schedule for sugarcane?",
-  "Which sugarcane variety is best for Kolhapur / Western Maharashtra?",
-  "How to identify and prevent Red Rot disease?",
-  "How to manage early shoot borer in sugarcane?"
-];
+const SUGGESTED_QUESTIONS_MAP = {
+  en: [
+    "My sugarcane leaves are turning yellow. What should I do?",
+    "What is the recommended fertilizer schedule for sugarcane?",
+    "Which sugarcane variety is best for Kolhapur / Western Maharashtra?",
+    "How to identify and prevent Red Rot disease?",
+    "How to manage early shoot borer in sugarcane?"
+  ],
+  mr: [
+    "ऊसाची पाने पिवळी पडत आहेत, काय उपाय करावा?",
+    "ऊसासाठी संतुलित खत व्यवस्थापन वेळापत्रक काय आहे?",
+    "कोल्हापूर / पश्चिम महाराष्ट्रासाठी कोणता ऊस वाण सर्वोत्तम आहे?",
+    "तांबोरा (लाल कुज) रोगाची लक्षणे व उपाय काय आहेत?",
+    "ऊसातील खोडकिडीचे नियंत्रण कसे करावे?"
+  ],
+  hi: [
+    "गन्ने की पत्तियां पीली पड़ रही हैं, क्या उपाय करें?",
+    "गन्ने के लिए संतुलित उर्वरक कार्यक्रम क्या है?",
+    "गन्ने की अधिक पैदावार के लिए कौन सी किस्म अच्छी है?",
+    "लाल सड़न (रेड रॉट) रोग की रोकथाम कैसे करें?",
+    "गन्ने में तना छेदक कीट का नियंत्रण कैसे करें?"
+  ],
+  ml: [
+    "കരിമ്പ് ഇലകൾ മഞ്ഞനിറമാകുന്നു, എന്തുചെയ്യണം?",
+    "കരിമ്പ് കൃഷിക്ക് അനുയോജ്യമായ വളപ്രयोगം ഏതാണ്?",
+    "കരിമ്പ് ചുവപ്പ് ചീയൽ രോഗം എങ്ങനെ നിയന്ത്രിക്കാം?",
+    "കരിമ്പ് തണ്ട് തുരപ്പൻ പുഴുവിനെ എങ്ങനെ നിയന്ത്രിക്കാം?"
+  ]
+};
 
 const Query = () => {
   const { t, i18n } = useTranslation();
@@ -261,10 +283,10 @@ const Query = () => {
         <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
             <HelpCircle size={15} className="text-emerald-600" />
-            <span>Frequently Asked Sugarcane Questions:</span>
+            <span>{t('query.suggestedTitle', { defaultValue: 'Frequently Asked Sugarcane Questions:' })}</span>
           </span>
           <div className="flex flex-wrap gap-2">
-            {SUGGESTED_QUESTIONS.map((q, idx) => (
+            {(SUGGESTED_QUESTIONS_MAP[(i18n.language || 'en').substring(0, 2).toLowerCase()] || SUGGESTED_QUESTIONS_MAP.en).map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => submitQuery(q)}

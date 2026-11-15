@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   History, 
@@ -19,6 +20,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const DiagnosisHistory = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -125,10 +127,10 @@ const DiagnosisHistory = () => {
           </Link>
           <h1 className="text-2xl md:text-3xl font-black flex items-center gap-3">
             <History size={28} />
-            <span>Sugarcane Diagnosis History</span>
+            <span>{t('history.title', { defaultValue: 'Sugarcane Diagnosis History' })}</span>
           </h1>
           <p className="text-emerald-100 text-sm mt-1">
-            Permanent records of your leaf analyses, diagnostic confidence, and treatment plans.
+            {t('history.subtitle', { defaultValue: 'Permanent records of your leaf analyses, diagnostic confidence, and treatment plans.' })}
           </p>
         </div>
 
@@ -137,7 +139,7 @@ const DiagnosisHistory = () => {
           className="self-start sm:self-center bg-white text-emerald-900 hover:bg-emerald-50 px-5 py-3 rounded-xl font-bold text-sm shadow transition-all flex items-center space-x-2"
         >
           <Activity size={18} />
-          <span>New Diagnosis</span>
+          <span>{t('navigation.sugarcaneDisease', { defaultValue: 'New Diagnosis' })}</span>
         </Link>
       </div>
 
@@ -145,22 +147,22 @@ const DiagnosisHistory = () => {
       {loading ? (
         <div className="bg-white rounded-3xl shadow-md p-12 text-center border border-gray-100">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-500 font-medium">Loading your saved diagnoses from MongoDB...</p>
+          <p className="text-gray-500 font-medium">{t('common.loading', { defaultValue: 'Loading your saved diagnoses from MongoDB...' })}</p>
         </div>
       ) : history.length === 0 ? (
         <div className="bg-white rounded-3xl shadow-md p-12 text-center border border-gray-100 space-y-4">
           <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto">
             <AlertCircle size={32} />
           </div>
-          <h3 className="text-xl font-bold text-gray-800">No Diagnoses Found Yet</h3>
+          <h3 className="text-xl font-bold text-gray-800">{t('history.emptyTitle', { defaultValue: 'No Diagnoses Found Yet' })}</h3>
           <p className="text-gray-500 max-w-md mx-auto text-sm">
-            You have not diagnosed any sugarcane leaves yet while logged in. Upload a sugarcane leaf photo to start building your diagnosis record.
+            {t('history.emptyDesc', { defaultValue: 'You have not diagnosed any sugarcane leaves yet while logged in. Upload a sugarcane leaf photo to start building your diagnosis record.' })}
           </p>
           <Link
             to="/sugarcane-disease"
             className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all text-sm mt-2"
           >
-            Diagnose First Leaf
+            {t('history.diagnoseNow', { defaultValue: 'Diagnose First Leaf' })}
           </Link>
         </div>
       ) : (

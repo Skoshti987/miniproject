@@ -420,7 +420,7 @@ class SugarcanePredictor:
         if (border_is_solid or border_white_ratio > 0.75 or border_dark_ratio > 0.75) and (white_ratio > 0.15 or flat_ratio > 0.42):
             return False, DEFAULT_INVALID_MSG
 
-        # 4. Color Spectrum & Biological Checks
+        # 4. Color Spectrum & Biological Foliage Checks
         r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
         total_intensity = r + g + b + 1e-6
         r_ratio = r / total_intensity
@@ -432,28 +432,44 @@ class SugarcanePredictor:
         mean_red_ratio = float(np.mean(r_ratio))
         mean_green_ratio = float(np.mean(g_ratio))
 
-        # Rejection for Non-Plant Colors (Vehicles, Sky, Blue cloth)
-        if mean_blue_ratio > 0.36 and excess_green < 0:
+        # Rejection for Non-Plant Colors (Vehicles, Sky, Blue cloth, Screens)
+        if mean_blue_ratio > 0.30 or float(np.mean(b_ratio > 0.34)) > 0.22:
             return False, DEFAULT_INVALID_MSG
 
-        # Rejection for Pure Red / Magenta artificial objects
-        if mean_red_ratio > 0.52 and excess_green < -30.0:
+        # Rejection for Pure Red / Magenta / Artificial objects
+        if mean_red_ratio > 0.50 and excess_green < -20.0:
             return False, DEFAULT_INVALID_MSG
 
-        # Rejection for Monochrome / Cement / Gray / Metallic surfaces
-        if abs(excess_green) < 6.0 and std_val < 22.0:
+        # Neutral Gray / Metal / Concrete / Paper Rejection (Low Color Saturation)
+        max_c = np.maximum(np.maximum(r, g), b)
+        min_c = np.minimum(np.minimum(r, g), b)
+        saturation = np.where(max_c > 0, (max_c - min_c) / (max_c + 1e-6), 0.0)
+        mean_sat = float(np.mean(saturation))
+        if mean_sat < 0.14 and abs(excess_green) < 15.0:
+            return False, DEFAULT_INVALID_MSG
+
+        # Biological Foliage Presence Check:
+        # Genuine sugarcane leaves must have green chlorophyll, yellow chlorosis, or rust orange-brown pustules.
+        green_mask = (g > r) & (g > b) & ((2.0 * g - r - b) > 4.0)
+        yellow_mask = (r > b) & (g > b) & (b_ratio < 0.26) & (((r + g) / 2.0 - b) > 18.0)
+        rust_mask = (r > g) & (g > b) & (b_ratio < 0.22) & ((r - b) > 22.0) & ((g - b) > 8.0)
+        foliage_mask = green_mask | yellow_mask | rust_mask
+        foliage_fraction = float(np.mean(foliage_mask))
+
+        if foliage_fraction < 0.25:
             return False, DEFAULT_INVALID_MSG
 
         # 5. Human Skin & Face Detection
         # Standard skin color locus in normalized RGB space
         skin_mask = (
-            (r_ratio >= 0.36) & (r_ratio <= 0.62) &
-            (g_ratio >= 0.27) & (g_ratio <= 0.38) &
-            (b_ratio >= 0.14) & (b_ratio <= 0.32) &
-            (r > g) & (g > b) & ((r - g) > 10.0)
+            (r > g) & (g > b) &
+            (r_ratio >= 0.38) & (r_ratio <= 0.65) &
+            (g_ratio >= 0.26) & (g_ratio <= 0.38) &
+            (b_ratio >= 0.12) & (b_ratio <= 0.28) &
+            ((r - g) > 12.0)
         )
         skin_fraction = float(np.mean(skin_mask))
-        if skin_fraction > 0.15 and mean_green_ratio < 0.38:
+        if skin_fraction > 0.12:
             return False, DEFAULT_INVALID_MSG
 
         # 6. Botanical Morphology: Monocot Sugarcane vs. Broad Dicot Crops
@@ -478,14 +494,9 @@ class SugarcanePredictor:
             orientation_entropy = -float(np.sum(hist_norm * np.log(hist_norm + 1e-6)))
 
             # If the edges are completely uniform/isotropic in all 8 directions without dominant parallel orientation
-            # AND the leaf lacks elongated aspect or green excess, it's a broad reticulate dicot leaf or complex non-grass object.
             aspect_ratio = max(w, h) / (min(w, h) + 1e-6)
             if orientation_entropy > 2.05 and aspect_ratio < 1.35 and excess_green < 15.0:
                 return False, DEFAULT_INVALID_MSG
-
-        # General foliage presence check (chlorophyll or chlorotic yellow/rust sugarcane leaf)
-        if excess_green < -40.0 and mean_green_ratio < 0.28:
-            return False, DEFAULT_INVALID_MSG
 
         return True, ""
 
@@ -569,60 +580,19 @@ class SugarcanePredictor:
                 "model_version": self.model_version
             }
         else:
+            # Low confidence or out-of-distribution image: Reject as invalid sugarcane image
             return {
-                "success": True,
-                "status": "uncertain",
+                "success": False,
                 "crop": "sugarcane",
-                "prediction": {
-                    "class": "Uncertain",
-                    "confidence": round(confidence, 4),
-                    "is_confident": False,
-                    "top_candidate": predicted_class,
-                    "why_identified": "Visual symptoms on the leaf blade are ambiguous or have low diagnostic confidence."
-                },
-                "recommendation": {
-                    "disease_name": "Uncertain Diagnosis",
-                    "summary": "Unable to determine the disease with high confidence. The visual features are ambiguous or insufficiently distinct.",
-                    "severity": "Low",
-                    "symptoms": "Ambiguous foliar discoloration; lacks decisive diagnostic lesions.",
-                    "why_identified": "The model's classification confidence fell below the diagnostic reliability threshold (60%).",
-                    "causes": "Early disease onset, minor insect feeding, or environmental stress.",
-                    "conditions_responsible": "Insufficient lighting or transitional symptom phase.",
-                    "actions": [
-                        "Capture a closer, well-focused photo under natural daylight.",
-                        "Inspect adjacent sugarcane stools to see if symptoms are spreading.",
-                        "Take a fresh leaf sample to your local Sugar Factory or Krishi Vigyan Kendra for direct expert verification."
-                    ],
-                    "immediate_treatment": [
-                        "Capture a closer, well-focused photo under natural daylight.",
-                        "Inspect adjacent sugarcane stools to see if symptoms are spreading.",
-                        "Take a fresh leaf sample to your local Sugar Factory or Krishi Vigyan Kendra for direct expert verification."
-                    ],
-                    "agricultural_practices": [
-                        "Avoid applying heavy chemical fungicides until disease symptoms are definitively identified."
-                    ],
-                    "prevention": [
-                        "Maintain standard field irrigation and weed control."
-                    ],
-                    "prevention_methods": [
-                        "Maintain standard field irrigation and weed control."
-                    ],
-                    "field_management": "Check soil moisture levels to ensure the plant is not experiencing drought stress.",
-                    "expert_consultation": "Consult local Krishi Bhavan or KVK Extension Officer for in-person diagnosis."
-                },
-                "products": {
-                    "disease_treatment_products": [],
-                    "crop_nutrition_fertilizers": [
-                        {
-                            "name": "IFFCO Water Soluble Fertilizer NPK (19:19:19)",
-                            "type": "General Crop Nutrition",
-                            "purpose": "General vegetative support while monitoring the crop.",
-                            "why_recommended": "Balanced nutrition prevents physiological yellowing without inducing chemical scorch.",
-                            "usage": "5g per liter of water sprayed in early morning or evening hours.",
-                            "approx_price": "₹130 - ₹180 per 1 kg pack",
-                            "purchase_link": "https://www.iffcobazar.in/en/product/npk-19-19-19"
-                        }
-                    ]
-                },
+                "status": "invalid_image",
+                "valid_leaf": False,
+                "disease": None,
+                "confidence": None,
+                "severity": None,
+                "treatment": None,
+                "message": "Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.",
+                "prediction": None,
+                "recommendation": None,
+                "products": None,
                 "model_version": self.model_version
             }

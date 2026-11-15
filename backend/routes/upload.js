@@ -507,6 +507,14 @@ router.post('/', upload.single('image'), async (req, res) => {
 
         if (mlResponse.ok) {
           const mlData = await mlResponse.json();
+          if (mlData.status === 'invalid_image' || mlData.valid_leaf === false || !mlData.success) {
+            return res.status(400).json({
+              success: false,
+              status: 'invalid_image',
+              valid_leaf: false,
+              message: mlData.message || 'Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.'
+            });
+          }
           analysis = {
             crop: 'Sugarcane',
             issueType: 'disease',
