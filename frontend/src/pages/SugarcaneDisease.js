@@ -16,9 +16,7 @@ import {
   History,
   Sparkles,
   Info,
-  Camera,
-  ShieldCheck,
-  Leaf
+  Camera
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import api from '../services/api';
@@ -378,6 +376,23 @@ const SugarcaneDisease = () => {
             </div>
 
             <div className="p-6 md:p-8 space-y-6">
+              {/* Uncertain Diagnosis Warning if confidence is below threshold */}
+              {result.prediction.is_confident === false && (
+                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex items-start space-x-3 text-amber-950">
+                  <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={22} />
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-amber-900">
+                      {t('sugarcane.uncertainDiagnosisTitle', { defaultValue: '⚠️ Low Confidence / Uncertain Diagnosis' })}
+                    </h4>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      {t('sugarcane.uncertainDiagnosisNotice', {
+                        defaultValue: 'The AI detected visual patterns resembling this disease, but diagnostic confidence is low. Please take a clearer, close-up photo of the affected leaf in bright natural light, or consult your local agricultural officer before taking drastic chemical measures.'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Class & Confidence Display */}
               <div className="bg-emerald-50/80 rounded-2xl p-6 border border-emerald-100 space-y-3">
                 <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
@@ -390,14 +405,21 @@ const SugarcaneDisease = () => {
                 {/* Confidence Bar */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex justify-between text-sm font-bold text-gray-700">
-                    <span>{t('sugarcane.aiConfidence', { defaultValue: 'Diagnostic Confidence' })}</span>
-                    <span className="text-emerald-700 font-extrabold">
+                    <span>
+                      {t('sugarcane.aiConfidence', { defaultValue: 'Diagnostic Confidence' })}
+                      {result.prediction.is_confident === false && (
+                        <span className="ml-2 text-xs text-amber-600 font-semibold">
+                          ({t('sugarcane.uncertainLabel', { defaultValue: 'Uncertain' })})
+                        </span>
+                      )}
+                    </span>
+                    <span className={result.prediction.is_confident === false ? 'text-amber-600 font-extrabold' : 'text-emerald-700 font-extrabold'}>
                       {Math.round(result.prediction.confidence * 100)}%
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden">
                     <div
-                      className="h-3.5 rounded-full transition-all duration-700 bg-emerald-600"
+                      className={`h-3.5 rounded-full transition-all duration-700 ${result.prediction.is_confident === false ? 'bg-amber-500' : 'bg-emerald-600'}`}
                       style={{ width: `${Math.min(100, Math.max(10, result.prediction.confidence * 100))}%` }}
                     ></div>
                   </div>
@@ -521,10 +543,10 @@ const SugarcaneDisease = () => {
                               </div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{prod.type}</p>
                               <p className="text-xs text-gray-700 leading-relaxed">
-                                <strong className="text-gray-900">Why Recommended:</strong> {prod.why_recommended}
+                                <strong className="text-gray-900">{t('sugarcane.whyRecommendedLabel', { defaultValue: 'Why Recommended:' })}</strong> {prod.why_recommended}
                               </p>
                               <p className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                <strong className="text-gray-800">Verified Usage:</strong> {prod.usage}
+                                <strong className="text-gray-800">{t('sugarcane.verifiedUsageLabel', { defaultValue: 'Verified Usage:' })}</strong> {prod.usage}
                               </p>
                               {prod.alternatives && (
                                 <p className="text-xs text-gray-500">
@@ -539,7 +561,7 @@ const SugarcaneDisease = () => {
                               rel="noopener noreferrer"
                               className="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 rounded-xl text-xs font-bold text-center shadow transition-all flex items-center justify-center space-x-1.5"
                             >
-                              <span>Buy on Official Agri Portal</span>
+                              <span>{t('sugarcane.buyOfficialBtn', { defaultValue: 'Buy on Official Agri Portal' })}</span>
                               <ExternalLink size={14} />
                             </a>
                           </div>
@@ -585,7 +607,7 @@ const SugarcaneDisease = () => {
                               rel="noopener noreferrer"
                               className="bg-green-700 hover:bg-green-800 text-white py-2.5 px-4 rounded-xl text-xs font-bold text-center shadow transition-all flex items-center justify-center space-x-1.5"
                             >
-                              <span>Buy on IFFCO Bazar</span>
+                              <span>{t('sugarcane.buyIffcoBtn', { defaultValue: 'Buy on IFFCO Bazar' })}</span>
                               <ExternalLink size={14} />
                             </a>
                           </div>

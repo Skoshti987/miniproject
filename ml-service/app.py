@@ -30,7 +30,7 @@ predictor = None
 def load_predictor():
     global predictor
     try:
-        predictor = SugarcanePredictor(confidence_threshold=0.60)
+        predictor = SugarcanePredictor(confidence_threshold=0.55)
         print("Sugarcane Predictor Model loaded successfully!")
     except Exception as e:
         print(f"Warning during model loading: {e}")
@@ -48,7 +48,7 @@ async def predict_sugarcane_disease(image: UploadFile = File(...)):
     global predictor
     if predictor is None:
         try:
-            predictor = SugarcanePredictor(confidence_threshold=0.60)
+            predictor = SugarcanePredictor(confidence_threshold=0.55)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Model loading error: {str(e)}")
 

@@ -10,7 +10,7 @@ MODELS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'mode
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SugarcanePredictor:
-    def __init__(self, confidence_threshold=0.60):
+    def __init__(self, confidence_threshold=0.55):
         self.confidence_threshold = confidence_threshold
         self.model_path = os.path.join(MODELS_DIR, 'sugarcane_disease_model.pt')
         self.metadata_path = os.path.join(MODELS_DIR, 'model_metadata.json')
@@ -369,58 +369,34 @@ class SugarcanePredictor:
 
     def validate_leaf_image(self, image: Image.Image):
         """
-        Comprehensive multi-stage domain validation:
-        1. Dimension & Image Quality (Resolution, Blur, Exposure, Dynamic Range)
-        2. Color & Biological Spectrum (Excess Green Index, Chlorophyll, Skin Tone, Sky/Metal rejection)
-        3. Canvas & Graphic Artifacts (Flat vectors, Logos, Document scans, Uniform framing)
-        4. Botanical Morphology (Parallel Monocot Venation vs. Reticulate Dicot Branching, Lobed Lamina)
-        
-        Returns:
-            (is_valid: bool, error_message: str)
+        Botanical & Signal-Processing Leaf Validation Pipeline:
+        Accept genuine sugarcane leaves (Healthy, Red Rot, Mosaic, Rust, Yellow Leaf).
+        Reject human portraits, animals, random objects, blue sky, concrete, documents, and noise.
         """
         DEFAULT_INVALID_MSG = "Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis."
         
         w, h = image.size
-        # 1. Dimension Check
-        if w < 80 or h < 80:
+        # 1. Dimension Check (minimum 60x60 for reliable feature extraction)
+        if w < 60 or h < 60:
             return False, DEFAULT_INVALID_MSG
 
         arr = np.array(image).astype(np.float32)
         std_val = float(np.std(arr))
         mean_val = float(np.mean(arr))
 
-        # 2. Quality & Exposure Checks
-        if std_val < 8.0 or mean_val < 15.0 or mean_val > 245.0:
+        # 2. Quality & Exposure Checks: Reject blank, completely black, or totally blown-out white images
+        if std_val < 6.0 or mean_val < 12.0 or mean_val > 248.0:
             return False, DEFAULT_INVALID_MSG
 
-        # Blur check via grayscale difference Laplacian approximation
-        gray = 0.2989 * arr[:, :, 0] + 0.5870 * arr[:, :, 1] + 0.1140 * arr[:, :, 2]
-        laplace = (
-            np.abs(gray[1:-1, 1:-1] * 4 - gray[:-2, 1:-1] - gray[2:, 1:-1] - gray[1:-1, :-2] - gray[1:-1, 2:])
-        )
-        laplace_var = float(np.var(laplace))
-        if laplace_var < 15.0:
+        # 3. Texture Coherence: Real leaf surfaces have continuous anatomical gradient structure.
+        # Reject pure synthetic noise (>38.0) or featureless flat blur (<0.5)
+        diff_y = np.abs(arr[1:, :, :] - arr[:-1, :, :])
+        diff_x = np.abs(arr[:, 1:, :] - arr[:, :-1, :])
+        mean_diff = float((np.mean(diff_y) + np.mean(diff_x)) / 2.0)
+        if mean_diff > 38.0 or mean_diff < 0.5:
             return False, DEFAULT_INVALID_MSG
 
-        # 3. Digital Graphic / Logo / Document Scan Checks
-        diff_h = np.abs(arr[1:, :, :] - arr[:-1, :, :])
-        diff_w = np.abs(arr[:, 1:, :] - arr[:, :-1, :])
-        flat_ratio = float((np.mean(np.all(diff_h < 1.0, axis=-1)) + np.mean(np.all(diff_w < 1.0, axis=-1))) / 2.0)
-        white_ratio = float(np.mean(np.all(arr > 225.0, axis=-1)))
-
-        borders = np.concatenate([arr[0, :, :], arr[-1, :, :], arr[:, 0, :], arr[:, -1, :]], axis=0)
-        border_std = float(np.mean(np.std(borders, axis=0)))
-        border_is_solid = border_std < 2.5
-        border_white_ratio = float(np.mean(np.all(borders > 220.0, axis=-1)))
-        border_dark_ratio = float(np.mean(np.all(borders < 35.0, axis=-1)))
-
-        if flat_ratio > 0.55 or white_ratio > 0.35:
-            return False, DEFAULT_INVALID_MSG
-
-        if (border_is_solid or border_white_ratio > 0.75 or border_dark_ratio > 0.75) and (white_ratio > 0.15 or flat_ratio > 0.42):
-            return False, DEFAULT_INVALID_MSG
-
-        # 4. Color Spectrum & Biological Foliage Checks
+        # 4. Color Spectrum Analysis
         r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
         total_intensity = r + g + b + 1e-6
         r_ratio = r / total_intensity
@@ -429,74 +405,43 @@ class SugarcanePredictor:
 
         excess_green = float(np.mean(2.0 * g - r - b))
         mean_blue_ratio = float(np.mean(b_ratio))
-        mean_red_ratio = float(np.mean(r_ratio))
+        high_blue_ratio = float(np.mean(b_ratio > 0.38))
         mean_green_ratio = float(np.mean(g_ratio))
 
-        # Rejection for Non-Plant Colors (Vehicles, Sky, Blue cloth, Screens)
-        if mean_blue_ratio > 0.30 or float(np.mean(b_ratio > 0.34)) > 0.22:
+        # 5. Human Skin & Face Detection
+        # Human skin has a specific melanin hue where R > G > B and excess green is strongly negative (2G - R - B < -6)
+        skin_mask = (
+            (r > g) & (g > b) &
+            (r_ratio > 0.38) &
+            (b_ratio < 0.25) &
+            ((r - g) > 15.0)
+        )
+        skin_fraction = float(np.mean(skin_mask))
+        if skin_fraction > 0.30 and excess_green < -6.0:
             return False, DEFAULT_INVALID_MSG
 
-        # Rejection for Pure Red / Magenta / Artificial objects
-        if mean_red_ratio > 0.50 and excess_green < -20.0:
+        # 6. Blue Sky & Blue Object Rejection (Vehicles, Blue Tarps, Sky)
+        if (mean_blue_ratio > 0.38 and excess_green < -5.0) or (high_blue_ratio > 0.25 and excess_green < 5.0):
             return False, DEFAULT_INVALID_MSG
 
-        # Neutral Gray / Metal / Concrete / Paper Rejection (Low Color Saturation)
+        # 7. Neutral Gray / Metal / Concrete / Paper Rejection (Very low color saturation)
         max_c = np.maximum(np.maximum(r, g), b)
         min_c = np.minimum(np.minimum(r, g), b)
         saturation = np.where(max_c > 0, (max_c - min_c) / (max_c + 1e-6), 0.0)
         mean_sat = float(np.mean(saturation))
-        if mean_sat < 0.14 and abs(excess_green) < 15.0:
+        if mean_sat < 0.10 and abs(excess_green) < 10.0:
             return False, DEFAULT_INVALID_MSG
 
-        # Biological Foliage Presence Check:
-        # Genuine sugarcane leaves must have green chlorophyll, yellow chlorosis, or rust orange-brown pustules.
-        green_mask = (g > r) & (g > b) & ((2.0 * g - r - b) > 4.0)
-        yellow_mask = (r > b) & (g > b) & (b_ratio < 0.26) & (((r + g) / 2.0 - b) > 18.0)
-        rust_mask = (r > g) & (g > b) & (b_ratio < 0.22) & ((r - b) > 22.0) & ((g - b) > 8.0)
-        foliage_mask = green_mask | yellow_mask | rust_mask
-        foliage_fraction = float(np.mean(foliage_mask))
-
-        if foliage_fraction < 0.25:
+        # 8. Document & Flat Graphics Check
+        flat_ratio = float((np.mean(np.all(diff_y < 1.0, axis=-1)) + np.mean(np.all(diff_x < 1.0, axis=-1))) / 2.0)
+        white_ratio = float(np.mean(np.all(arr > 230.0, axis=-1)))
+        if flat_ratio > 0.65 or white_ratio > 0.50:
             return False, DEFAULT_INVALID_MSG
 
-        # 5. Human Skin & Face Detection
-        # Standard skin color locus in normalized RGB space
-        skin_mask = (
-            (r > g) & (g > b) &
-            (r_ratio >= 0.38) & (r_ratio <= 0.65) &
-            (g_ratio >= 0.26) & (g_ratio <= 0.38) &
-            (b_ratio >= 0.12) & (b_ratio <= 0.28) &
-            ((r - g) > 12.0)
-        )
-        skin_fraction = float(np.mean(skin_mask))
-        if skin_fraction > 0.12:
+        # 9. Biological Plant Foliage Presence Check:
+        # Genuine sugarcane leaves have green chlorophyll, yellow chlorosis, or rust pustules.
+        if excess_green < -7.0 or mean_green_ratio < 0.27:
             return False, DEFAULT_INVALID_MSG
-
-        # 6. Botanical Morphology: Monocot Sugarcane vs. Broad Dicot Crops
-        # Sugarcane has parallel fibrous venation along a dominant axis.
-        # Broad dicot leaves (cotton, tomato, potato, weeds) have multidirectional branching (reticulate) veins.
-        # Compute gradient orientation distribution
-        sobel_y = np.abs(gray[2:, :] - gray[:-2, :])[:, 1:-1]
-        sobel_x = np.abs(gray[:, 2:] - gray[:, :-2])[1:-1, :]
-        min_h = min(sobel_y.shape[0], sobel_x.shape[0])
-        min_w = min(sobel_y.shape[1], sobel_x.shape[1])
-        sobel_y = sobel_y[:min_h, :min_w]
-        sobel_x = sobel_x[:min_h, :min_w]
-
-        grad_mag = np.sqrt(sobel_x**2 + sobel_y**2) + 1e-6
-        strong_edge_mask = grad_mag > np.percentile(grad_mag, 70)
-        
-        if np.sum(strong_edge_mask) > 100:
-            angles = np.arctan2(sobel_y[strong_edge_mask], sobel_x[strong_edge_mask])
-            # 8-bin orientation histogram
-            hist, _ = np.histogram(angles, bins=8, range=(-np.pi, np.pi))
-            hist_norm = hist / (np.sum(hist) + 1e-6)
-            orientation_entropy = -float(np.sum(hist_norm * np.log(hist_norm + 1e-6)))
-
-            # If the edges are completely uniform/isotropic in all 8 directions without dominant parallel orientation
-            aspect_ratio = max(w, h) / (min(w, h) + 1e-6)
-            if orientation_entropy > 2.05 and aspect_ratio < 1.35 and excess_green < 15.0:
-                return False, DEFAULT_INVALID_MSG
 
         return True, ""
 
@@ -538,49 +483,12 @@ class SugarcanePredictor:
         confidence = float(top_prob.cpu().numpy())
         predicted_class = self.classes[top_idx.item()]
 
-        # OOD Entropy Check: If probabilities are scattered, reject or flag uncertain
+        # OOD Entropy Check: calculate distribution uncertainty
         probs_np = probabilities.cpu().numpy()
         entropy = -float(np.sum(probs_np * np.log(probs_np + 1e-6)))
 
-        is_confident = confidence >= self.confidence_threshold and entropy < 1.25
-
-        if is_confident:
-            kb = self.knowledge_base.get(predicted_class, self.knowledge_base["Healthy"])
-            return {
-                "success": True,
-                "status": "valid_leaf",
-                "crop": "sugarcane",
-                "prediction": {
-                    "class": predicted_class,
-                    "confidence": round(confidence, 4),
-                    "is_confident": True,
-                    "why_identified": kb.get("why_identified", f"Identified visual patterns of {predicted_class}.")
-                },
-                "recommendation": {
-                    "disease_name": kb.get("disease_name", predicted_class),
-                    "summary": kb.get("summary", ""),
-                    "local_names": kb.get("local_names", {}),
-                    "severity": kb.get("severity", "Moderate"),
-                    "symptoms": kb.get("symptoms", ""),
-                    "why_identified": kb.get("why_identified", ""),
-                    "causes": kb.get("causes", ""),
-                    "conditions_responsible": kb.get("conditions_responsible", ""),
-                    "actions": kb.get("immediate_treatment", []),
-                    "immediate_treatment": kb.get("immediate_treatment", []),
-                    "agricultural_practices": kb.get("agricultural_practices", []),
-                    "prevention": kb.get("prevention_methods", []),
-                    "prevention_methods": kb.get("prevention_methods", []),
-                    "field_management": kb.get("field_management", ""),
-                    "expert_consultation": kb.get("expert_consultation", "")
-                },
-                "products": kb.get("products", {
-                    "disease_treatment_products": [],
-                    "crop_nutrition_fertilizers": []
-                }),
-                "model_version": self.model_version
-            }
-        else:
-            # Low confidence or out-of-distribution image: Reject as invalid sugarcane image
+        # Hard rejection for completely uncertain / non-sugarcane patterns
+        if confidence < 0.28 or entropy > 1.55:
             return {
                 "success": False,
                 "crop": "sugarcane",
@@ -596,3 +504,46 @@ class SugarcanePredictor:
                 "products": None,
                 "model_version": self.model_version
             }
+
+        # Confident vs. Low Confidence (uncertain) diagnosis
+        is_confident = bool(confidence >= self.confidence_threshold and entropy < 1.25)
+        kb = self.knowledge_base.get(predicted_class, self.knowledge_base["Healthy"])
+
+        why_text = kb.get("why_identified", f"Identified visual patterns characteristic of {predicted_class}.")
+        if not is_confident:
+            why_text += f" Note: Lower diagnostic certainty ({round(confidence * 100)}%). Verification recommended."
+
+        return {
+            "success": True,
+            "status": "valid_leaf",
+            "crop": "sugarcane",
+            "prediction": {
+                "class": predicted_class,
+                "confidence": round(confidence, 4),
+                "is_confident": is_confident,
+                "uncertain_diagnosis": not is_confident,
+                "why_identified": why_text
+            },
+            "recommendation": {
+                "disease_name": kb.get("disease_name", predicted_class),
+                "summary": kb.get("summary", ""),
+                "local_names": kb.get("local_names", {}),
+                "severity": kb.get("severity", "Moderate"),
+                "symptoms": kb.get("symptoms", ""),
+                "why_identified": why_text,
+                "causes": kb.get("causes", ""),
+                "conditions_responsible": kb.get("conditions_responsible", ""),
+                "actions": kb.get("immediate_treatment", []),
+                "immediate_treatment": kb.get("immediate_treatment", []),
+                "agricultural_practices": kb.get("agricultural_practices", []),
+                "prevention": kb.get("prevention_methods", []),
+                "prevention_methods": kb.get("prevention_methods", []),
+                "field_management": kb.get("field_management", ""),
+                "expert_consultation": kb.get("expert_consultation", "")
+            },
+            "products": kb.get("products", {
+                "disease_treatment_products": [],
+                "crop_nutrition_fertilizers": []
+            }),
+            "model_version": self.model_version
+        }

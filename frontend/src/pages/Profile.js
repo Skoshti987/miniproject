@@ -127,16 +127,16 @@ const Profile = () => {
 
   const validate = () => {
     const errors = {};
-    if (!formData.name.trim()) errors.name = 'Full name is required';
+    if (!formData.name.trim()) errors.name = t('profile.valNameRequired', { defaultValue: 'Full name is required' });
     if (formData.mobileNumber && !/^\d{10}$/.test(formData.mobileNumber.replace(/\D/g, ''))) {
-      errors.mobileNumber = 'Please enter a valid 10-digit mobile number';
+      errors.mobileNumber = t('profile.valMobileInvalid', { defaultValue: 'Please enter a valid 10-digit mobile number' });
     }
-    if (Number(formData.totalLand) < 0) errors.totalLand = 'Land area cannot be negative';
-    if (Number(formData.sugarcaneArea) < 0) errors.sugarcaneArea = 'Sugarcane area cannot be negative';
+    if (Number(formData.totalLand) < 0) errors.totalLand = t('profile.valLandNegative', { defaultValue: 'Land area cannot be negative' });
+    if (Number(formData.sugarcaneArea) < 0) errors.sugarcaneArea = t('profile.valAreaNegative', { defaultValue: 'Sugarcane area cannot be negative' });
     if (Number(formData.sugarcaneArea) > Number(formData.totalLand) && Number(formData.totalLand) > 0) {
-      errors.sugarcaneArea = 'Sugarcane area cannot exceed total agricultural land';
+      errors.sugarcaneArea = t('profile.valAreaExceed', { defaultValue: 'Sugarcane area cannot exceed total agricultural land' });
     }
-    if (Number(formData.farmingExperience) < 0) errors.farmingExperience = 'Experience cannot be negative';
+    if (Number(formData.farmingExperience) < 0) errors.farmingExperience = t('profile.valExpNegative', { defaultValue: 'Experience cannot be negative' });
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -165,7 +165,7 @@ const Profile = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      toast.error('Please correct the validation errors before saving.');
+      toast.error(t('profile.validationErrors', { defaultValue: 'Please correct the validation errors before saving.' }));
       return;
     }
 
@@ -186,10 +186,10 @@ const Profile = () => {
       }
 
       setIsEditing(false);
-      toast.success('Farmer profile updated and saved to MongoDB successfully!');
+      toast.success(t('profile.saveSuccess', { defaultValue: 'Farmer profile updated and saved to MongoDB successfully!' }));
     } catch (err) {
       console.error('Failed to update profile:', err);
-      toast.error(err?.message || 'Failed to update profile');
+      toast.error(err?.message || t('profile.saveError', { defaultValue: 'Failed to update profile' }));
     } finally {
       setSaving(false);
     }
@@ -203,17 +203,17 @@ const Profile = () => {
             <User size={40} />
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-            Sign In to Access Farmer Profile
+            {t('profile.signInRequiredTitle', { defaultValue: 'Sign In to Access Farmer Profile' })}
           </h2>
           <p className="text-gray-600 max-w-md mx-auto text-base">
-            Save your farm location, sugarcane varieties, land acreage, and preferences permanently to receive personalized advisories and disease tracking.
+            {t('profile.signInRequiredDesc', { defaultValue: 'Save your farm location, sugarcane varieties, land acreage, and preferences permanently to receive personalized advisories and disease tracking.' })}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 pt-2">
             <Link
               to="/login"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-md transition-all"
             >
-              Sign In to My Profile
+              {t('profile.signInBtn', { defaultValue: 'Sign In to My Profile' })}
             </Link>
           </div>
         </div>
@@ -227,10 +227,10 @@ const Profile = () => {
       <div className="bg-gradient-to-r from-emerald-800 via-green-700 to-teal-800 rounded-3xl shadow-xl p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <span className="bg-emerald-900/80 text-emerald-200 text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider mb-2 inline-block border border-emerald-500/30">
-            🌾 Farmer Profile & Agronomic Data
+            {t('profile.headerBadge', { defaultValue: '🌾 Farmer Profile & Agronomic Data' })}
           </span>
           <h1 className="text-3xl font-black">
-            {formData.name || 'Farmer Profile'}
+            {formData.name || t('profile.defaultTitle', { defaultValue: 'Farmer Profile' })}
           </h1>
           <p className="text-emerald-100 text-sm">
             {formData.village ? `${formData.village}, ` : ''}{formData.district}, {formData.state}
@@ -244,7 +244,7 @@ const Profile = () => {
               className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-6 py-3 rounded-xl shadow transition-all flex items-center space-x-2 text-sm"
             >
               <Edit3 size={16} />
-              <span>Edit Farm Profile</span>
+              <span>{t('profile.editBtn', { defaultValue: 'Edit Farm Profile' })}</span>
             </button>
           ) : (
             <button
@@ -255,7 +255,7 @@ const Profile = () => {
               className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center space-x-2 text-sm"
             >
               <X size={16} />
-              <span>Cancel</span>
+              <span>{t('profile.cancelBtn', { defaultValue: 'Cancel' })}</span>
             </button>
           )}
         </div>
@@ -268,26 +268,26 @@ const Profile = () => {
           <div>
             <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
               <User size={18} className="text-emerald-600" />
-              <span>1. Farmer Personal Information</span>
+              <span>{t('profile.section1', { defaultValue: '1. Farmer Personal Information' })}</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Full Name *
+                  {t('profile.fullName', { defaultValue: 'Full Name' })} *
                 </label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="Enter full name"
+                    placeholder={t('profile.fullNamePlaceholder', { defaultValue: 'Enter full name' })}
                     className={`w-full px-4 py-3 rounded-xl border ${formErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 font-semibold text-sm border border-gray-100">
-                    {formData.name || 'Not provided'}
+                    {formData.name || t('profile.notProvided', { defaultValue: 'Not provided' })}
                   </div>
                 )}
                 {formErrors.name && <p className="text-xs text-red-600 mt-1">{formErrors.name}</p>}
@@ -296,7 +296,7 @@ const Profile = () => {
               {/* Email Address */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Email Address
+                  {t('profile.email', { defaultValue: 'Email Address' })}
                 </label>
                 <div className="p-3 bg-gray-50 rounded-xl text-gray-600 text-sm border border-gray-100 font-medium">
                   {formData.email}
@@ -306,19 +306,19 @@ const Profile = () => {
               {/* Mobile Number */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Mobile Number
+                  {t('profile.mobileNumber', { defaultValue: 'Mobile Number' })}
                 </label>
                 {isEditing ? (
                   <input
                     type="tel"
                     value={formData.mobileNumber}
                     onChange={(e) => handleChange('mobileNumber', e.target.value)}
-                    placeholder="e.g. 9876543210"
+                    placeholder={t('profile.mobilePlaceholder', { defaultValue: 'e.g. 9876543210' })}
                     className={`w-full px-4 py-3 rounded-xl border ${formErrors.mobileNumber ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.mobileNumber || 'Not provided'}
+                    {formData.mobileNumber || t('profile.notProvided', { defaultValue: 'Not provided' })}
                   </div>
                 )}
                 {formErrors.mobileNumber && <p className="text-xs text-red-600 mt-1">{formErrors.mobileNumber}</p>}
@@ -327,7 +327,7 @@ const Profile = () => {
               {/* Farming Experience */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Farming Experience (Years)
+                  {t('profile.farmingExperience', { defaultValue: 'Farming Experience (Years)' })}
                 </label>
                 {isEditing ? (
                   <input
@@ -340,7 +340,7 @@ const Profile = () => {
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.farmingExperience} Years
+                    {formData.farmingExperience} {t('profile.years', { defaultValue: 'Years' })}
                   </div>
                 )}
               </div>
@@ -351,14 +351,14 @@ const Profile = () => {
           <div>
             <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
               <MapPin size={18} className="text-emerald-600" />
-              <span>2. Farm Location & Region</span>
+              <span>{t('profile.section2', { defaultValue: '2. Farm Location & Region' })}</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* State */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  State
+                  {t('profile.state', { defaultValue: 'State' })}
                 </label>
                 {isEditing ? (
                   <input
@@ -377,7 +377,7 @@ const Profile = () => {
               {/* District */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  District
+                  {t('profile.district', { defaultValue: 'District' })}
                 </label>
                 {isEditing ? (
                   <select
@@ -399,19 +399,19 @@ const Profile = () => {
               {/* Village */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Village / Gram Panchayat
+                  {t('profile.village', { defaultValue: 'Village / Gram Panchayat' })}
                 </label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={formData.village}
                     onChange={(e) => handleChange('village', e.target.value)}
-                    placeholder="e.g. Shirol, Hatkanangale, Karveer"
+                    placeholder={t('profile.villagePlaceholder', { defaultValue: 'e.g. Shirol, Hatkanangale, Karveer' })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.village || 'Not specified'}
+                    {formData.village || t('profile.notSpecified', { defaultValue: 'Not specified' })}
                   </div>
                 )}
               </div>
@@ -419,19 +419,19 @@ const Profile = () => {
               {/* Farm Location / Survey No. */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Farm Location / Survey No.
+                  {t('profile.farmLocation', { defaultValue: 'Farm Location / Survey No.' })}
                 </label>
                 {isEditing ? (
                   <input
                     type="text"
                     value={formData.farmLocation}
                     onChange={(e) => handleChange('farmLocation', e.target.value)}
-                    placeholder="e.g. Survey No. 199, Gat No. 45"
+                    placeholder={t('profile.farmLocationPlaceholder', { defaultValue: 'e.g. Survey No. 199, Gat No. 45' })}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.farmLocation || 'Not specified'}
+                    {formData.farmLocation || t('profile.notSpecified', { defaultValue: 'Not specified' })}
                   </div>
                 )}
               </div>
@@ -442,14 +442,14 @@ const Profile = () => {
           <div>
             <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
               <Layers size={18} className="text-emerald-600" />
-              <span>3. Sugarcane Cultivation & Land Holdings</span>
+              <span>{t('profile.section3', { defaultValue: '3. Sugarcane Cultivation & Land Holdings' })}</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Total Agricultural Land */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Total Agricultural Land (Acres)
+                  {t('profile.totalLand', { defaultValue: 'Total Agricultural Land (Acres)' })}
                 </label>
                 {isEditing ? (
                   <input
@@ -462,7 +462,7 @@ const Profile = () => {
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.totalLand} Acres
+                    {formData.totalLand} {t('profile.acres', { defaultValue: 'Acres' })}
                   </div>
                 )}
                 {formErrors.totalLand && <p className="text-xs text-red-600 mt-1">{formErrors.totalLand}</p>}
@@ -471,7 +471,7 @@ const Profile = () => {
               {/* Sugarcane Cultivation Area */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Sugarcane Cultivation Area (Acres)
+                  {t('profile.sugarcaneArea', { defaultValue: 'Sugarcane Cultivation Area (Acres)' })}
                 </label>
                 {isEditing ? (
                   <input
@@ -484,7 +484,7 @@ const Profile = () => {
                   />
                 ) : (
                   <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
-                    {formData.sugarcaneArea} Acres
+                    {formData.sugarcaneArea} {t('profile.acres', { defaultValue: 'Acres' })}
                   </div>
                 )}
                 {formErrors.sugarcaneArea && <p className="text-xs text-red-600 mt-1">{formErrors.sugarcaneArea}</p>}
@@ -493,7 +493,7 @@ const Profile = () => {
               {/* Sugarcane Variety */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Primary Sugarcane Variety
+                  {t('profile.sugarcaneVariety', { defaultValue: 'Primary Sugarcane Variety' })}
                 </label>
                 {isEditing ? (
                   <select
@@ -518,14 +518,14 @@ const Profile = () => {
           <div>
             <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
               <Globe size={18} className="text-emerald-600" />
-              <span>4. App Language & Notification Preferences</span>
+              <span>{t('profile.section4', { defaultValue: '4. App Language & Notification Preferences' })}</span>
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Preferred Language */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Preferred Language
+                  {t('profile.preferredLanguage', { defaultValue: 'Preferred Language' })}
                 </label>
                 {isEditing ? (
                   <select
@@ -548,7 +548,7 @@ const Profile = () => {
               {/* Notification Toggles */}
               <div className="space-y-3 pt-2">
                 <span className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Active Alerts
+                  {t('profile.activeAlerts', { defaultValue: 'Active Alerts' })}
                 </span>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center space-x-2 text-xs font-semibold text-gray-700 cursor-pointer">
@@ -559,7 +559,7 @@ const Profile = () => {
                       onChange={() => handleNotificationToggle('weather')}
                       className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                     />
-                    <span>Weather Alerts</span>
+                    <span>{t('profile.weatherAlerts', { defaultValue: 'Weather Alerts' })}</span>
                   </label>
                   <label className="flex items-center space-x-2 text-xs font-semibold text-gray-700 cursor-pointer">
                     <input
@@ -569,7 +569,7 @@ const Profile = () => {
                       onChange={() => handleNotificationToggle('diseases')}
                       className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                     />
-                    <span>Disease Warnings</span>
+                    <span>{t('profile.diseaseWarnings', { defaultValue: 'Disease Warnings' })}</span>
                   </label>
                 </div>
               </div>
@@ -587,7 +587,7 @@ const Profile = () => {
                 }}
                 className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition-colors"
               >
-                Cancel
+                {t('profile.cancelBtn', { defaultValue: 'Cancel' })}
               </button>
               <button
                 type="submit"
@@ -597,12 +597,12 @@ const Profile = () => {
                 {saving ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Saving to MongoDB...</span>
+                    <span>{t('profile.savingBtn', { defaultValue: 'Saving to MongoDB...' })}</span>
                   </>
                 ) : (
                   <>
                     <Save size={16} />
-                    <span>Save Farm Profile</span>
+                    <span>{t('profile.saveBtn', { defaultValue: 'Save Farm Profile' })}</span>
                   </>
                 )}
               </button>
