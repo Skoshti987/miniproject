@@ -11,9 +11,33 @@ const issueToken = (user) =>
     expiresIn: '7d'
   });
 
+const formatUserResponse = (user) => ({
+  id: user._id,
+  email: user.email,
+  name: user.name || '',
+  mobileNumber: user.mobileNumber || '',
+  state: user.state || 'Maharashtra',
+  district: user.district || 'Kolhapur',
+  village: user.village || '',
+  farmLocation: user.farmLocation || '',
+  totalLand: user.totalLand || '0',
+  sugarcaneArea: user.sugarcaneArea || '0',
+  sugarcaneVariety: user.sugarcaneVariety || 'Co 86032',
+  farmingExperience: user.farmingExperience || '0',
+  location: user.location || 'Kolhapur, Maharashtra',
+  language: user.language || 'en',
+  crops: user.crops || ['Sugarcane'],
+  notifications: user.notifications || {
+    weather: true,
+    advisories: true,
+    diseases: true,
+    market: false
+  }
+});
+
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name = '' } = req.body;
+    const { email, password, name = '', mobileNumber = '' } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
@@ -24,22 +48,21 @@ router.post('/signup', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, passwordHash, name });
+    const user = await User.create({
+      email,
+      passwordHash,
+      name,
+      mobileNumber
+    });
     const token = issueToken(user);
 
     return res.status(201).json({
+      success: true,
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        location: user.location,
-        language: user.language,
-        crops: user.crops,
-        notifications: user.notifications
-      }
+      user: formatUserResponse(user)
     });
   } catch (error) {
+    console.error('Signup error:', error.message);
     return res.status(500).json({ message: 'Failed to create account' });
   }
 });
@@ -63,18 +86,12 @@ router.post('/login', async (req, res) => {
 
     const token = issueToken(user);
     return res.json({
+      success: true,
       token,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        location: user.location,
-        language: user.language,
-        crops: user.crops,
-        notifications: user.notifications
-      }
+      user: formatUserResponse(user)
     });
   } catch (error) {
+    console.error('Login error:', error.message);
     return res.status(500).json({ message: 'Login failed' });
   }
 });
@@ -85,8 +102,9 @@ router.get('/me', auth, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    return res.json({ user });
+    return res.json({ success: true, user: formatUserResponse(user) });
   } catch (error) {
+    console.error('Profile fetch error:', error.message);
     return res.status(500).json({ message: 'Failed to load profile' });
   }
 });

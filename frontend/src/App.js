@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import LanguageSelector from './components/LanguageSelector';
 import Login from './pages/Login';
 import SugarcaneDisease from './pages/SugarcaneDisease';
+import DiagnosisHistory from './pages/DiagnosisHistory';
 import GovernmentSchemes from './pages/GovernmentSchemes';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/sugarcane-disease" element={<SugarcaneDisease />} />
+              <Route path="/history" element={<DiagnosisHistory />} />
               <Route path="/query" element={<Query />} />
               <Route path="/schemes" element={<GovernmentSchemes />} />
               <Route path="/upload" element={<Upload />} />

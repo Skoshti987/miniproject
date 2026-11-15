@@ -1,346 +1,614 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { User, MapPin, Crop, Bell, Settings, Globe, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { 
+  User, 
+  MapPin, 
+  Layers, 
+  Save, 
+  Edit3, 
+  X, 
+  Globe
+} from 'lucide-react';
 import { toast } from 'react-toastify';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+
+const SUGARCANE_VARIETIES = [
+  'Co 86032 (Nayan)',
+  'CoM 0265 (Phule 265)',
+  'Co 0238 (Karan 4)',
+  'Co 94012 (Phule Savitri)',
+  'Co 11015',
+  'MS 10001',
+  'CoC 671',
+  'Co 8014 (Mahalaxmi)',
+  'VSI 434',
+  'Other Local Variety'
+];
+
+const MAHARASHTRA_DISTRICTS = [
+  'Kolhapur',
+  'Sangli',
+  'Satara',
+  'Pune',
+  'Solapur',
+  'Ahmednagar',
+  'Nashik',
+  'Aurangabad (Chhatrapati Sambhajinagar)',
+  'Jalna',
+  'Beed',
+  'Osmanabad (Dharashiv)',
+  'Nanded',
+  'Other District'
+];
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
-  const { user, updateProfile: saveProfileToApi } = useAuth();
+  const { user, updateProfile: saveProfileToContext } = useAuth();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: user?.name || 'Farmer Name',
-    location: user?.location || '',
-    language: user?.language || i18n.language,
-    crops: user?.crops?.length ? user.crops : ['Rice', 'Coconut', 'Banana'],
-    notifications: user?.notifications || { weather: true, advisories: true, diseases: true, market: false }
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // All 11 Required Fields + Preferences
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    mobileNumber: '',
+    state: 'Maharashtra',
+    district: 'Kolhapur',
+    village: '',
+    farmLocation: '',
+    totalLand: '0',
+    sugarcaneArea: '0',
+    sugarcaneVariety: 'Co 86032 (Nayan)',
+    farmingExperience: '0',
+    language: 'en',
+    crops: ['Sugarcane'],
+    notifications: {
+      weather: true,
+      advisories: true,
+      diseases: true,
+      market: false
+    }
   });
 
-  const [tempProfile, setTempProfile] = useState(profile);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
-    if (!user) return;
-    const nextProfile = {
-      name: user.name || 'Farmer Name',
-      location: user.location || '',
-      language: user.language || i18n.language,
-      crops: user.crops?.length ? user.crops : ['Rice', 'Coconut', 'Banana'],
-      notifications: user.notifications || { weather: true, advisories: true, diseases: true, market: false }
-    };
-    setProfile(nextProfile);
-    setTempProfile(nextProfile);
-  }, [user, i18n.language]);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    loadProfile();
+  }, [user]);
 
-  const handleEdit = () => {
-    setTempProfile(profile);
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
+  const loadProfile = async () => {
     try {
-      const updated = await saveProfileToApi(tempProfile);
-      setProfile({
-        name: updated.name || '',
-        location: updated.location || '',
-        language: updated.language || i18n.language,
-        crops: updated.crops || [],
-        notifications: updated.notifications || tempProfile.notifications
-      });
-      i18n.changeLanguage(tempProfile.language);
-      setIsEditing(false);
-      toast.success('Profile updated successfully!');
-    } catch (error) {
-      toast.error(error?.message || 'Failed to update profile');
+      setLoading(true);
+      const res = await api('/profile');
+      if (res && res.user) {
+        populateForm(res.user);
+      } else if (user) {
+        populateForm(user);
+      }
+    } catch (err) {
+      console.warn('Could not fetch /profile directly, falling back to auth user:', err.message);
+      if (user) populateForm(user);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setTempProfile(profile);
-    setIsEditing(false);
+  const populateForm = (data) => {
+    setFormData({
+      name: data.name || '',
+      email: data.email || '',
+      mobileNumber: data.mobileNumber || '',
+      state: data.state || 'Maharashtra',
+      district: data.district || 'Kolhapur',
+      village: data.village || '',
+      farmLocation: data.farmLocation || '',
+      totalLand: String(data.totalLand || '0'),
+      sugarcaneArea: String(data.sugarcaneArea || '0'),
+      sugarcaneVariety: data.sugarcaneVariety || 'Co 86032 (Nayan)',
+      farmingExperience: String(data.farmingExperience || '0'),
+      language: data.language || i18n.language || 'en',
+      crops: data.crops?.length ? data.crops : ['Sugarcane'],
+      notifications: data.notifications || {
+        weather: true,
+        advisories: true,
+        diseases: true,
+        market: false
+      }
+    });
   };
 
-  const handleInputChange = (field, value) => {
-    setTempProfile(prev => ({
+  const validate = () => {
+    const errors = {};
+    if (!formData.name.trim()) errors.name = 'Full name is required';
+    if (formData.mobileNumber && !/^\d{10}$/.test(formData.mobileNumber.replace(/\D/g, ''))) {
+      errors.mobileNumber = 'Please enter a valid 10-digit mobile number';
+    }
+    if (Number(formData.totalLand) < 0) errors.totalLand = 'Land area cannot be negative';
+    if (Number(formData.sugarcaneArea) < 0) errors.sugarcaneArea = 'Sugarcane area cannot be negative';
+    if (Number(formData.sugarcaneArea) > Number(formData.totalLand) && Number(formData.totalLand) > 0) {
+      errors.sugarcaneArea = 'Sugarcane area cannot exceed total agricultural land';
+    }
+    if (Number(formData.farmingExperience) < 0) errors.farmingExperience = 'Experience cannot be negative';
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value
     }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
-  const handleNotificationChange = (key, value) => {
-    setTempProfile(prev => ({
+  const handleNotificationToggle = (key) => {
+    setFormData((prev) => ({
       ...prev,
       notifications: {
         ...prev.notifications,
-        [key]: value
+        [key]: !prev.notifications[key]
       }
     }));
   };
 
-  const addCrop = (crop) => {
-    if (crop && !tempProfile.crops.includes(crop)) {
-      setTempProfile(prev => ({
-        ...prev,
-        crops: [...prev.crops, crop]
-      }));
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!validate()) {
+      toast.error('Please correct the validation errors before saving.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const res = await api('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(formData)
+      });
+
+      if (res && res.user) {
+        populateForm(res.user);
+        if (saveProfileToContext) saveProfileToContext(res.user);
+      }
+
+      if (formData.language && formData.language !== i18n.language) {
+        i18n.changeLanguage(formData.language);
+      }
+
+      setIsEditing(false);
+      toast.success('Farmer profile updated and saved to MongoDB successfully!');
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      toast.error(err?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const removeCrop = (crop) => {
-    setTempProfile(prev => ({
-      ...prev,
-      crops: prev.crops.filter(c => c !== crop)
-    }));
-  };
-
-  const commonCrops = [
-    'Rice', 'Wheat', 'Maize', 'Coconut', 'Banana', 'Tapioca', 
-    'Rubber', 'Tea', 'Coffee', 'Spices', 'Vegetables', 'Fruits'
-  ];
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 md:p-12 text-center space-y-6">
+          <div className="w-20 h-20 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
+            <User size={40} />
+          </div>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
+            Sign In to Access Farmer Profile
+          </h2>
+          <p className="text-gray-600 max-w-md mx-auto text-base">
+            Save your farm location, sugarcane varieties, land acreage, and preferences permanently to receive personalized advisories and disease tracking.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-2">
+            <Link
+              to="/login"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-8 rounded-xl shadow-md transition-all"
+            >
+              Sign In to My Profile
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          {t('profile.title')}
-        </h1>
-        <p className="text-gray-600">
-          Manage your profile and preferences
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-emerald-800 via-green-700 to-teal-800 rounded-3xl shadow-xl p-6 md:p-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <span className="bg-emerald-900/80 text-emerald-200 text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider mb-2 inline-block border border-emerald-500/30">
+            🌾 Farmer Profile & Agronomic Data
+          </span>
+          <h1 className="text-3xl font-black">
+            {formData.name || 'Farmer Profile'}
+          </h1>
+          <p className="text-emerald-100 text-sm">
+            {formData.village ? `${formData.village}, ` : ''}{formData.district}, {formData.state}
+          </p>
+        </div>
 
-      {/* Profile Information */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-            <User className="mr-2 text-green-600" size={24} />
-            Personal Information
-          </h2>
+        <div>
           {!isEditing ? (
             <button
-              onClick={handleEdit}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+              onClick={() => setIsEditing(true)}
+              className="bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-6 py-3 rounded-xl shadow transition-all flex items-center space-x-2 text-sm"
             >
-              Edit Profile
+              <Edit3 size={16} />
+              <span>Edit Farm Profile</span>
             </button>
           ) : (
-            <div className="flex space-x-2">
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                loadProfile();
+              }}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center space-x-2 text-sm"
+            >
+              <X size={16} />
+              <span>Cancel</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Profile Form Card */}
+      <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6 md:p-8">
+        <form onSubmit={handleSave} className="space-y-8">
+          {/* SECTION 1: Personal Details */}
+          <div>
+            <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
+              <User size={18} className="text-emerald-600" />
+              <span>1. Farmer Personal Information</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Full Name *
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    placeholder="Enter full name"
+                    className={`w-full px-4 py-3 rounded-xl border ${formErrors.name ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 font-semibold text-sm border border-gray-100">
+                    {formData.name || 'Not provided'}
+                  </div>
+                )}
+                {formErrors.name && <p className="text-xs text-red-600 mt-1">{formErrors.name}</p>}
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Email Address
+                </label>
+                <div className="p-3 bg-gray-50 rounded-xl text-gray-600 text-sm border border-gray-100 font-medium">
+                  {formData.email}
+                </div>
+              </div>
+
+              {/* Mobile Number */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Mobile Number
+                </label>
+                {isEditing ? (
+                  <input
+                    type="tel"
+                    value={formData.mobileNumber}
+                    onChange={(e) => handleChange('mobileNumber', e.target.value)}
+                    placeholder="e.g. 9876543210"
+                    className={`w-full px-4 py-3 rounded-xl border ${formErrors.mobileNumber ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.mobileNumber || 'Not provided'}
+                  </div>
+                )}
+                {formErrors.mobileNumber && <p className="text-xs text-red-600 mt-1">{formErrors.mobileNumber}</p>}
+              </div>
+
+              {/* Farming Experience */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Farming Experience (Years)
+                </label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    min="0"
+                    max="80"
+                    value={formData.farmingExperience}
+                    onChange={(e) => handleChange('farmingExperience', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.farmingExperience} Years
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: Location & Address */}
+          <div>
+            <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
+              <MapPin size={18} className="text-emerald-600" />
+              <span>2. Farm Location & Region</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* State */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  State
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.state}
+                    onChange={(e) => handleChange('state', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.state}
+                  </div>
+                )}
+              </div>
+
+              {/* District */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  District
+                </label>
+                {isEditing ? (
+                  <select
+                    value={formData.district}
+                    onChange={(e) => handleChange('district', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-white"
+                  >
+                    {MAHARASHTRA_DISTRICTS.map((dist) => (
+                      <option key={dist} value={dist}>{dist}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.district}
+                  </div>
+                )}
+              </div>
+
+              {/* Village */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Village / Gram Panchayat
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.village}
+                    onChange={(e) => handleChange('village', e.target.value)}
+                    placeholder="e.g. Shirol, Hatkanangale, Karveer"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.village || 'Not specified'}
+                  </div>
+                )}
+              </div>
+
+              {/* Farm Location / Survey No. */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Farm Location / Survey No.
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={formData.farmLocation}
+                    onChange={(e) => handleChange('farmLocation', e.target.value)}
+                    placeholder="e.g. Survey No. 199, Gat No. 45"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium"
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.farmLocation || 'Not specified'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: Farm Land & Sugarcane Cultivation Data */}
+          <div>
+            <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
+              <Layers size={18} className="text-emerald-600" />
+              <span>3. Sugarcane Cultivation & Land Holdings</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Total Agricultural Land */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Total Agricultural Land (Acres)
+                </label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={formData.totalLand}
+                    onChange={(e) => handleChange('totalLand', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border ${formErrors.totalLand ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.totalLand} Acres
+                  </div>
+                )}
+                {formErrors.totalLand && <p className="text-xs text-red-600 mt-1">{formErrors.totalLand}</p>}
+              </div>
+
+              {/* Sugarcane Cultivation Area */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Sugarcane Cultivation Area (Acres)
+                </label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={formData.sugarcaneArea}
+                    onChange={(e) => handleChange('sugarcaneArea', e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border ${formErrors.sugarcaneArea ? 'border-red-400 bg-red-50' : 'border-gray-200'} focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium`}
+                  />
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.sugarcaneArea} Acres
+                  </div>
+                )}
+                {formErrors.sugarcaneArea && <p className="text-xs text-red-600 mt-1">{formErrors.sugarcaneArea}</p>}
+              </div>
+
+              {/* Sugarcane Variety */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Primary Sugarcane Variety
+                </label>
+                {isEditing ? (
+                  <select
+                    value={formData.sugarcaneVariety}
+                    onChange={(e) => handleChange('sugarcaneVariety', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-white"
+                  >
+                    {SUGARCANE_VARIETIES.map((v) => (
+                      <option key={v} value={v}>{v}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-3 bg-emerald-50 text-emerald-950 text-sm rounded-xl border border-emerald-200 font-extrabold">
+                    🌱 {formData.sugarcaneVariety}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: Language & Notification Preferences */}
+          <div>
+            <h3 className="text-base font-extrabold text-gray-900 border-b border-gray-100 pb-3 mb-5 flex items-center gap-2">
+              <Globe size={18} className="text-emerald-600" />
+              <span>4. App Language & Notification Preferences</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Preferred Language */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Preferred Language
+                </label>
+                {isEditing ? (
+                  <select
+                    value={formData.language}
+                    onChange={(e) => handleChange('language', e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-white"
+                  >
+                    <option value="en">English (English)</option>
+                    <option value="mr">मराठी (Marathi)</option>
+                    <option value="hi">हिंदी (Hindi)</option>
+                    <option value="ml">മലയാളം (Malayalam)</option>
+                  </select>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-xl text-gray-900 text-sm border border-gray-100 font-semibold">
+                    {formData.language === 'mr' ? 'मराठी (Marathi)' : formData.language === 'hi' ? 'हिंदी (Hindi)' : formData.language === 'ml' ? 'മലയാളം (Malayalam)' : 'English'}
+                  </div>
+                )}
+              </div>
+
+              {/* Notification Toggles */}
+              <div className="space-y-3 pt-2">
+                <span className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Active Alerts
+                </span>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center space-x-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.notifications.weather}
+                      disabled={!isEditing}
+                      onChange={() => handleNotificationToggle('weather')}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>Weather Alerts</span>
+                  </label>
+                  <label className="flex items-center space-x-2 text-xs font-semibold text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.notifications.diseases}
+                      disabled={!isEditing}
+                      onChange={() => handleNotificationToggle('diseases')}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                    />
+                    <span>Disease Warnings</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons in Edit Mode */}
+          {isEditing && (
+            <div className="pt-4 border-t border-gray-100 flex items-center justify-end space-x-4">
               <button
-                onClick={handleCancel}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  loadProfile();
+                }}
+                className="px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-1"
+                type="submit"
+                disabled={saving}
+                className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition-all flex items-center space-x-2 disabled:bg-gray-400"
               >
-                <Save size={16} />
-                <span>Save</span>
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Saving to MongoDB...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    <span>Save Farm Profile</span>
+                  </>
+                )}
               </button>
             </div>
           )}
-        </div>
-
-        <div className="space-y-6">
-          {/* Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={tempProfile.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-gray-800">
-                {profile.name}
-              </div>
-            )}
-          </div>
-
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-              <MapPin className="mr-1" size={16} />
-              Location
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={tempProfile.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-gray-800">
-                {profile.location || 'Not set'}
-              </div>
-            )}
-          </div>
-
-          {/* Language */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-              <Globe className="mr-1" size={16} />
-              {t('profile.language')}
-            </label>
-            {isEditing ? (
-              <select
-                value={tempProfile.language}
-                onChange={(e) => handleInputChange('language', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              >
-                <option value="en">English</option>
-                <option value="hi">हिन्दी</option>
-                <option value="ml">മലയാളം</option>
-                <option value="mr">मराठी</option>
-              </select>
-            ) : (
-              <div className="p-3 bg-gray-50 rounded-lg text-gray-800">
-                {t(`languages.${profile.language}`)}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Crops */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-          <Crop className="mr-2 text-green-600" size={24} />
-          {t('profile.crops')}
-        </h2>
-
-        <div className="space-y-4">
-          {/* Current Crops */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Crops
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {tempProfile.crops.map((crop, index) => (
-                <div
-                  key={index}
-                  className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center space-x-2"
-                >
-                  <span>{crop}</span>
-                  {isEditing && (
-                    <button
-                      onClick={() => removeCrop(crop)}
-                      className="text-green-600 hover:text-green-800"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Add Crops */}
-          {isEditing && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add Crops
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {commonCrops
-                  .filter(crop => !tempProfile.crops.includes(crop))
-                  .map((crop, index) => (
-                    <button
-                      key={index}
-                      onClick={() => addCrop(crop)}
-                      className="bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700 px-3 py-2 rounded-lg text-sm transition-colors"
-                    >
-                      + {crop}
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-          <Bell className="mr-2 text-green-600" size={24} />
-          {t('profile.notifications')}
-        </h2>
-
-        <div className="space-y-4">
-          {Object.entries(tempProfile.notifications).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <div className="font-medium text-gray-800 capitalize">
-                  {key.replace('_', ' ')}
-                </div>
-                <div className="text-sm text-gray-600">
-                  {key === 'weather' && 'Weather updates and alerts'}
-                  {key === 'advisories' && 'Agricultural advisories and recommendations'}
-                  {key === 'diseases' && 'Disease outbreak notifications'}
-                  {key === 'market' && 'Market prices and trends'}
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={value}
-                  onChange={(e) => handleNotificationChange(key, e.target.checked)}
-                  disabled={!isEditing}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Settings */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-          <Settings className="mr-2 text-green-600" size={24} />
-          {t('profile.settings')}
-        </h2>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <div className="font-medium text-gray-800">Data Usage</div>
-              <div className="text-sm text-gray-600">Optimize for low bandwidth</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <div className="font-medium text-gray-800">Voice Recognition</div>
-              <div className="text-sm text-gray-600">Enable voice input for queries</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <div className="font-medium text-gray-800">Location Services</div>
-              <div className="text-sm text-gray-600">Use location for weather and local advisories</div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" defaultChecked className="sr-only peer" />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-            </label>
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -1,23 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { Mic, MicOff, Send, MessageCircle, ThumbsUp, ThumbsDown, AlertTriangle, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { 
+  Mic, 
+  MicOff, 
+  Send, 
+  MessageSquare, 
+  ThumbsUp, 
+  ThumbsDown, 
+  Volume2, 
+  Trash2, 
+  HelpCircle
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-
-const detectLanguageCode = async (text, preferredLanguage) => {
-  if (preferredLanguage) return preferredLanguage;
-
-  if (/[\u0900-\u097F]/.test(text)) return 'mr';
-  if (/[\u0D00-\u0D7F]/.test(text)) return 'ml';
-
-  try {
-    return navigator.language?.split('-')[0] || 'en';
-  } catch {
-    return 'en';
-  }
-};
 
 const toSpeechLocale = (languageCode) => {
   const map = {
@@ -29,20 +26,13 @@ const toSpeechLocale = (languageCode) => {
   return map[languageCode] || 'en-IN';
 };
 
-const translateText = async (text, targetLang, apiKey = process.env.REACT_APP_GOOGLE_TRANSLATE_API_KEY) => {
-  if (!apiKey || !text || !targetLang) return text;
-  try {
-    const res = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: text, target: targetLang })
-    });
-    const data = await res.json();
-    return data?.data?.translations?.[0]?.translatedText || text;
-  } catch {
-    return text;
-  }
-};
+const SUGGESTED_QUESTIONS = [
+  "My sugarcane leaves are turning yellow. What should I do?",
+  "What is the recommended fertilizer schedule for sugarcane?",
+  "Which sugarcane variety is best for Kolhapur / Western Maharashtra?",
+  "How to identify and prevent Red Rot disease?",
+  "How to manage early shoot borer in sugarcane?"
+];
 
 const Query = () => {
   const { t, i18n } = useTranslation();
@@ -50,20 +40,30 @@ const Query = () => {
   const location = useLocation();
 
   const [query, setQuery] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [answer, setAnswer] = useState('');
+  const [messages, setMessages] = useState([]);
   const [sources, setSources] = useState([]);
   const [feedback, setFeedback] = useState(null);
   const [queryId, setQueryId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const textareaRef = useRef(null);
-  const recognitionRef = useRef(null);
   const [listening, setListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const [serviceNotice, setServiceNotice] = useState(null);
+  const recognitionRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-  // Auto-fill query when coming from Disease Diagnosis page
+  // Load chat history on mount
+  useEffect(() => {
+    if (user) {
+      loadChatHistory();
+    }
+  }, [user]);
+
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isProcessing]);
+
+  // Handle prefill context from SugarcaneDisease diagnosis page
   useEffect(() => {
     if (location.state && location.state.prefillQuery) {
       const prefilled = location.state.prefillQuery;
@@ -72,39 +72,74 @@ const Query = () => {
     }
   }, [location.state]);
 
+  const loadChatHistory = async () => {
+    try {
+      const res = await api('/query/history');
+      if (res && res.history && res.history.length > 0) {
+        const formatted = [];
+        res.history.forEach((h) => {
+          if (h.query) formatted.push({ role: 'user', content: h.query });
+          if (h.answer) formatted.push({ role: 'assistant', content: h.answer, id: h._id });
+        });
+        setMessages(formatted);
+      }
+    } catch (err) {
+      console.warn('Could not load chat history:', err.message);
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!window.confirm('Are you sure you want to clear your conversation history?')) return;
+    try {
+      if (user) {
+        await api('/query/history', { method: 'DELETE' });
+      }
+      setMessages([]);
+      setSources([]);
+      setQueryId(null);
+      toast.success('Conversation history cleared.');
+    } catch (err) {
+      toast.error('Failed to clear conversation history.');
+    }
+  };
+
   const submitQuery = async (text) => {
     const cleanQuery = (text || '').trim();
     if (!cleanQuery) return;
 
     setIsProcessing(true);
-    setAnswer('');
     setSources([]);
     setFeedback(null);
-    setServiceNotice(null);
 
     const newHistory = [...messages, { role: 'user', content: cleanQuery }];
+    setMessages(newHistory);
+    setQuery('');
 
     try {
-      const currentLang = i18n.language || 'en';
+      const currentLang = i18n.language || user?.language || 'en';
       const data = await api('/query', {
         method: 'POST',
         body: JSON.stringify({
           query: cleanQuery,
           language: currentLang,
-          location: user?.location?.trim() || 'India',
+          location: user?.district ? `${user.district}, ${user.state || 'Maharashtra'}` : 'Kolhapur, Maharashtra',
           history: messages.slice(-6)
-        }),
+        })
       });
-      setAnswer(data.answer);
+
       setSources(data.sources || []);
       setQueryId(data.id || null);
-      if (data.serviceNotice) {
-        setServiceNotice(data.serviceNotice);
-      }
-      setMessages([...newHistory, { role: 'assistant', content: data.answer }]);
+      setMessages([...newHistory, { role: 'assistant', content: data.answer, id: data.id }]);
     } catch (error) {
       console.error('Chatbot error:', error);
-      toast.error(error?.message || t('common.error'));
+      toast.error(error?.message || 'Failed to process agricultural query.');
+      setMessages([
+        ...newHistory,
+        {
+          role: 'assistant',
+          content: 'I apologize, but I could not connect to the agricultural knowledge base right now. Please check your internet connection or verify backend services.'
+        }
+      ]);
     } finally {
       setIsProcessing(false);
     }
@@ -113,7 +148,7 @@ const Query = () => {
   const handleVoiceInput = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      toast.error('Voice input is not supported in this browser. Please type your question.');
+      toast.error('Voice recognition is not supported in this browser. Please type your query.');
       return;
     }
 
@@ -127,13 +162,12 @@ const Query = () => {
     recognition.lang = toSpeechLocale(currentActiveLang);
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+
     recognition.onstart = () => {
       setListening(true);
-      setIsRecording(true);
     };
     recognition.onend = () => {
       setListening(false);
-      setIsRecording(false);
     };
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript || '';
@@ -146,18 +180,16 @@ const Query = () => {
     };
     recognition.onerror = () => {
       setListening(false);
-      setIsRecording(false);
-      toast.error('Could not capture voice input. Please check microphone permissions.');
+      toast.error('Could not capture microphone audio. Please verify permissions.');
     };
 
     recognitionRef.current = recognition;
     recognition.start();
   };
 
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const handleSpeakAnswer = () => {
+  const handleSpeakText = (text) => {
     if (!('speechSynthesis' in window)) {
-      toast.info('Text-to-speech audio is not supported in this browser.');
+      toast.info('Audio playback is not supported in this browser.');
       return;
     }
     if (isSpeaking) {
@@ -166,7 +198,7 @@ const Query = () => {
       return;
     }
     const currentActiveLang = i18n.language || user?.language || 'en';
-    const cleanText = answer.replace(/[#*`_]/g, '');
+    const cleanText = (text || '').replace(/[#*`_]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = toSpeechLocale(currentActiveLang);
     utterance.onend = () => setIsSpeaking(false);
@@ -175,242 +207,201 @@ const Query = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    await submitQuery(query);
+    submitQuery(query);
   };
 
-  const handleFeedback = (isHelpful) => {
-    if (!queryId) return;
+  const handleFeedback = (isHelpful, id) => {
+    const targetId = id || queryId;
+    if (!targetId) return;
+
     api('/query/feedback', {
       method: 'POST',
-      body: JSON.stringify({ queryId, helpful: isHelpful })
+      body: JSON.stringify({ queryId: targetId, helpful: isHelpful })
     })
       .then(() => {
         setFeedback(isHelpful);
         toast.success('Thank you for your feedback!');
       })
-      .catch((error) => {
-        toast.error(error?.message || 'Failed to save feedback');
-      });
-  };
-
-  const handleEscalate = () => {
-    if (!queryId) return;
-    api('/query/escalate', {
-      method: 'POST',
-      body: JSON.stringify({ queryId })
-    })
-      .then(() => {
-        toast.info('Your query has been escalated to the nearest Krishi Bhavan officer.');
-      })
-      .catch((error) => {
-        toast.error(error?.message || 'Failed to escalate query');
+      .catch((err) => {
+        toast.error(err?.message || 'Could not record feedback');
       });
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
-      <div className="text-center space-y-2">
-        <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
-          <Sparkles size={14} /> {t('app.specializedBadge')}
-        </span>
-        <h1 className="text-3xl font-bold text-gray-800">
-          {t('query.title')}
-        </h1>
-        <p className="text-gray-600 text-base max-w-xl mx-auto">
-          {t('query.subtitle')}
-        </p>
-      </div>
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-emerald-800 via-green-700 to-teal-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span className="bg-emerald-900/80 text-emerald-200 text-xs font-bold px-3.5 py-1.5 rounded-full uppercase tracking-wider mb-2 inline-block border border-emerald-500/30">
+            🌾 Specialized Sugarcane AI Expert
+          </span>
+          <h1 className="text-3xl font-black">
+            KrishSathi Sugarcane Assistant
+          </h1>
+          <p className="text-emerald-100 text-sm mt-1 max-w-xl">
+            Ask questions regarding sugarcane varieties, fertilizer schedules, drip irrigation, pest management, and sugar recovery.
+          </p>
+        </div>
 
-      {/* Query Form */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 space-y-4">
-        {location.state?.diseaseContext && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between text-sm text-emerald-900 font-medium">
-            <span>
-              🌱 <strong>{t('query.contextLoaded')}:</strong> {location.state.diseaseContext.localizedDiseaseName} ({location.state.diseaseContext.confidencePct}% {t('sugarcane.confidenceLabel')})
-            </span>
-          </div>
+        {messages.length > 0 && (
+          <button
+            onClick={handleClearChat}
+            className="self-start md:self-center bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5"
+          >
+            <Trash2 size={14} />
+            <span>Clear Chat</span>
+          </button>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <textarea
-              ref={textareaRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('query.placeholder')}
-              className="w-full p-4 pr-20 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none text-base text-gray-800"
-              rows={4}
-              disabled={isProcessing}
-            />
-            <button
-              type="button"
-              onClick={handleVoiceInput}
-              className={`absolute right-3 top-3 p-3 rounded-xl transition-all shadow-sm ${
-                isRecording
-                  ? 'bg-red-500 text-white hover:bg-red-600 scale-105'
-                  : 'bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700'
-              }`}
-              disabled={isProcessing}
-            >
-              {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
-            </button>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <div className="text-sm font-medium text-gray-500">
-              {isRecording && (
-                <span className="flex items-center space-x-2 text-red-500 font-semibold">
-                  <Mic size={18} className="animate-pulse" />
-                  <span>{t('query.listening')}</span>
-                </span>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={!query.trim() || isProcessing}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md flex items-center space-x-2 text-base"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>{t('query.processing')}</span>
-                </>
-              ) : (
-                <>
-                  <Send size={18} />
-                  <span>{t('query.submit')}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
       </div>
 
-      {/* Answer Section */}
-      {answer && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-emerald-100 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">
-                <MessageCircle size={22} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">{t('query.answer')}</h2>
-                <span className="text-xs text-gray-500">Sugarcane AI Advisory</span>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSpeakAnswer}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                isSpeaking
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-300'
-                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-              }`}
-            >
-              {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              <span>{isSpeaking ? 'Stop Audio' : 'Listen Answer'}</span>
-            </button>
-          </div>
-          
-          {serviceNotice && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3 text-xs flex items-center gap-2">
-              <span className="font-bold">ℹ️ Note:</span>
-              <span>{serviceNotice}</span>
-            </div>
-          )}
-
-          <div className="prose max-w-none text-gray-800 leading-relaxed text-base whitespace-pre-line bg-gray-50/50 p-6 rounded-xl border border-gray-100">
-            {answer}
-          </div>
-
-          {/* Sources */}
-          {sources.length > 0 && (
-            <div className="pt-4 border-t border-gray-100">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-600 mb-3">{t('query.sources')}</h3>
-              <div className="space-y-2">
-                {sources.map((source, index) => (
-                  <div key={index} className="flex items-center space-x-2 text-sm text-gray-600">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    <span className="font-medium">{source.title}</span>
-                    <span className="text-gray-400">•</span>
-                    <span>{source.date}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Feedback & Escalation Section */}
-          <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">
-                {t('query.helpful')}
-              </h3>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => handleFeedback(true)}
-                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    feedback === true
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-emerald-50'
-                  }`}
-                >
-                  <ThumbsUp size={16} />
-                  <span>{t('common.yes')}</span>
-                </button>
-                <button
-                  onClick={() => handleFeedback(false)}
-                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                    feedback === false
-                      ? 'bg-red-100 text-red-800 border border-red-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-red-50'
-                  }`}
-                >
-                  <ThumbsDown size={16} />
-                  <span>{t('common.no')}</span>
-                </button>
-              </div>
-            </div>
-            
-            <button
-              onClick={handleEscalate}
-              className="flex items-center justify-center space-x-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow transition-colors"
-            >
-              <AlertTriangle size={18} />
-              <span>{t('query.escalate')}</span>
-            </button>
+      {/* Suggested Questions Chips */}
+      {messages.length === 0 && (
+        <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-3">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <HelpCircle size={15} className="text-emerald-600" />
+            <span>Frequently Asked Sugarcane Questions:</span>
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {SUGGESTED_QUESTIONS.map((q, idx) => (
+              <button
+                key={idx}
+                onClick={() => submitQuery(q)}
+                disabled={isProcessing}
+                className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-semibold py-2 px-3.5 rounded-xl border border-emerald-200 text-left transition-all"
+              >
+                {q}
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Sugarcane Quick Questions */}
-      <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          🌱 Frequently Asked Sugarcane Questions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            'What fertilizer is needed during sugarcane tillering stage?',
-            'How often should I irrigate sugarcane in summer?',
-            'My sugarcane leaves are showing Red Rot symptoms. What should I do?',
-            'How can I prevent Sugarcane Mosaic Virus spread?',
-            'Best practices for sugarcane ratoon crop management',
-            'How to control sugarcane rust fungal infection organically?'
-          ].map((question, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setQuery(question);
-                submitQuery(question);
-              }}
-              className="text-left p-3.5 bg-gray-50 hover:bg-emerald-50/80 rounded-xl transition-all border border-gray-200 hover:border-emerald-300 text-sm font-medium text-gray-700 hover:text-emerald-900"
-            >
-              {question}
-            </button>
-          ))}
+      {/* Chat Messages Feed */}
+      <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-6 md:p-8 min-h-[400px] flex flex-col justify-between space-y-6">
+        <div className="space-y-4 overflow-y-auto max-h-[550px] pr-2">
+          {messages.length === 0 && (
+            <div className="text-center py-16 space-y-3 text-gray-400">
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <MessageSquare size={32} />
+              </div>
+              <p className="text-sm font-semibold text-gray-600">
+                Ask your first sugarcane farming question above or click any suggested prompt!
+              </p>
+              <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                KrishSathi speaks English, Marathi (मराठी), Hindi (हिंदी), and Malayalam (മലയാളം).
+              </p>
+            </div>
+          )}
+
+          {messages.map((msg, index) => {
+            const isUser = msg.role === 'user';
+            return (
+              <div
+                key={index}
+                className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
+              >
+                <div
+                  className={`max-w-[85%] md:max-w-[75%] rounded-2xl p-4 md:p-5 shadow-sm ${
+                    isUser
+                      ? 'bg-emerald-700 text-white rounded-br-none'
+                      : 'bg-gray-50 text-gray-900 border border-gray-100 rounded-bl-none'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4 mb-1.5 border-b pb-1.5 border-black/10">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-80">
+                      {isUser ? 'Farmer' : 'KrishSathi Sugarcane Expert'}
+                    </span>
+                    {!isUser && (
+                      <button
+                        onClick={() => handleSpeakText(msg.content)}
+                        className="text-gray-500 hover:text-emerald-700 p-1 rounded transition-colors"
+                        title="Read aloud"
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="text-sm md:text-base leading-relaxed whitespace-pre-line font-normal">
+                    {msg.content}
+                  </div>
+
+                  {/* Feedback on AI answer */}
+                  {!isUser && msg.id && (
+                    <div className="flex items-center justify-end gap-2 pt-3 mt-2 border-t border-gray-200/60 text-xs text-gray-500">
+                      <span>Helpful?</span>
+                      <button
+                        onClick={() => handleFeedback(true, msg.id)}
+                        className="hover:text-emerald-600 p-1"
+                        title="Yes, helpful"
+                      >
+                        <ThumbsUp size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(false, msg.id)}
+                        className="hover:text-red-600 p-1"
+                        title="Not helpful"
+                      >
+                        <ThumbsDown size={13} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {isProcessing && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-bl-none p-4 flex items-center space-x-3 text-emerald-800">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600"></div>
+                <span className="text-xs font-semibold">Consulting ICAR/VSI Sugarcane Knowledge Base...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
+
+        {/* Input Bar */}
+        <form onSubmit={handleSubmit} className="pt-4 border-t border-gray-100">
+          <div className="relative flex items-center gap-2">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask anything about sugarcane crops, varieties, fertilizers, diseases, or sugar recovery..."
+              disabled={isProcessing}
+              className="flex-1 px-5 py-4 pr-24 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium shadow-sm"
+            />
+
+            <div className="absolute right-3 flex items-center space-x-1.5">
+              <button
+                type="button"
+                onClick={handleVoiceInput}
+                className={`p-2.5 rounded-xl transition-all ${
+                  listening
+                    ? 'bg-red-500 text-white animate-pulse'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                }`}
+                title="Voice Input"
+              >
+                {listening ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+
+              <button
+                type="submit"
+                disabled={!query.trim() || isProcessing}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white p-2.5 rounded-xl shadow-md transition-all flex items-center justify-center"
+                title="Send Question"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

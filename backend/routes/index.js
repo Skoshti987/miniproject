@@ -6,6 +6,7 @@ const queryRoutes = require('./query');
 const uploadRoutes = require('./upload');
 const weatherRoutes = require('./weather');
 const diseaseRoutes = require('./disease');
+const dashboardRoutes = require('./dashboard');
 
 // Basic health check route
 router.get('/', (req, res) => {
@@ -18,5 +19,6 @@ router.use('/query', queryRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/weather', weatherRoutes);
 router.use('/disease', diseaseRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 module.exports = router;

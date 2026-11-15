@@ -86,6 +86,7 @@ KrishSathi is a mobile-first Progressive Web Application (PWA) that provides AI-
    ```
 
 5. **Access the application**
+
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8080/api
 

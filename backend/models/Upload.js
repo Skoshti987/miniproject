@@ -15,33 +15,85 @@ const uploadSchema = new mongoose.Schema(
       type: String,
       default: 'image/jpeg'
     },
+    imageData: {
+      type: String,
+      default: ''
+    },
     size: {
       type: Number,
       default: 0
     },
+    crop: {
+      type: String,
+      default: 'sugarcane'
+    },
     disease: {
       type: String,
+      required: true,
       default: 'Unknown'
     },
     confidence: {
       type: Number,
-      default: 0.7
+      default: 0.0
     },
-    recommendation: {
-      type: String,
-      default: 'Consult your nearest Krishi Bhavan officer for treatment guidance.'
-    },
-    treatment: {
-      type: String,
-      default: 'Use crop-specific treatment recommended by local agriculture experts.'
+    isConfident: {
+      type: Boolean,
+      default: true
     },
     severity: {
       type: String,
       default: 'Moderate'
     },
+    symptoms: {
+      type: String,
+      default: ''
+    },
+    whyIdentified: {
+      type: String,
+      default: ''
+    },
+    causes: {
+      type: String,
+      default: ''
+    },
+    conditionsResponsible: {
+      type: String,
+      default: ''
+    },
+    summary: {
+      type: String,
+      default: ''
+    },
+    treatment: {
+      type: [String],
+      default: []
+    },
+    agriculturalPractices: {
+      type: [String],
+      default: []
+    },
+    prevention: {
+      type: [String],
+      default: []
+    },
+    fieldManagement: {
+      type: String,
+      default: ''
+    },
+    expertConsultation: {
+      type: String,
+      default: ''
+    },
+    products: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {
+        disease_treatment_products: [],
+        crop_nutrition_fertilizers: []
+      }
+    },
     sources: {
       type: [String],
-      default: ['Krishi Bhavan Advisory']
+      default: ['KrishSathi Sugarcane AI Classifier', 'ICAR-SBI / VSI Advisory']
     }
   },
   { timestamps: true }

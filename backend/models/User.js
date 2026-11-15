@@ -18,10 +18,55 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: ''
     },
-    location: {
+    mobileNumber: {
       type: String,
       trim: true,
       default: ''
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: 'Maharashtra'
+    },
+    district: {
+      type: String,
+      trim: true,
+      default: 'Kolhapur'
+    },
+    village: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    farmLocation: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    totalLand: {
+      type: String,
+      trim: true,
+      default: '0'
+    },
+    sugarcaneArea: {
+      type: String,
+      trim: true,
+      default: '0'
+    },
+    sugarcaneVariety: {
+      type: String,
+      trim: true,
+      default: 'Co 86032'
+    },
+    farmingExperience: {
+      type: String,
+      trim: true,
+      default: '0'
+    },
+    location: {
+      type: String,
+      trim: true,
+      default: 'Kolhapur, Maharashtra'
     },
     language: {
       type: String,
@@ -29,7 +74,7 @@ const userSchema = new mongoose.Schema(
     },
     crops: {
       type: [String],
-      default: []
+      default: ['Sugarcane']
     },
     notifications: {
       weather: { type: Boolean, default: true },
