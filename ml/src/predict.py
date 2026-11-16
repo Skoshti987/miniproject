@@ -41,6 +41,53 @@ class SugarcanePredictor:
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
 
+        # Feature extractor up to classifier[0] (1024-dim layer before final linear classification)
+        self.feature_extractor = nn.Sequential(
+            self.model.features,
+            self.model.avgpool,
+            nn.Flatten(),
+            self.model.classifier[0],
+            self.model.classifier[1],
+            self.model.classifier[2]
+        )
+
+        # Precomputed prototype centroids from dataset for Out-Of-Distribution detection
+        self.prototypes_path = os.path.join(MODELS_DIR, 'sugarcane_prototypes.json')
+        self.class_prototypes = {}
+        self.global_proto = None
+        if os.path.exists(self.prototypes_path):
+            try:
+                with open(self.prototypes_path, 'r', encoding='utf-8') as f:
+                    proto_data = json.load(f)
+                self.class_prototypes = {k: np.array(v, dtype=np.float32) for k, v in proto_data.get('class_prototypes', {}).items()}
+                self.global_proto = np.array(proto_data.get('global_prototype', []), dtype=np.float32)
+            except Exception as e:
+                print(f"Warning loading sugarcane prototypes: {e}")
+
+        # Pretrained MobileNetV3 (ImageNet) for general object, animal, and human semantic rejection
+        self.imagenet_weights = models.MobileNet_V3_Small_Weights.DEFAULT
+        self.imagenet_model = models.mobilenet_v3_small(weights=self.imagenet_weights).to(DEVICE).eval()
+        self.imagenet_transforms = self.imagenet_weights.transforms()
+        self.imagenet_cats = self.imagenet_weights.meta['categories']
+
+        disallowed_keywords = [
+            'dog', 'terrier', 'hound', 'retriever', 'spaniel', 'shepherd', 'poodle', 'collie', 'boxer', 'bulldog',
+            'cat', 'tabby', 'persian', 'siamese', 'cougar', 'cheetah', 'lion', 'tiger', 'leopard', 'bear',
+            'elephant', 'whale', 'dolphin', 'seal', 'horse', 'zebra', 'cow', 'ox', 'bull', 'bison', 'sheep', 'goat',
+            'pig', 'hog', 'monkey', 'chimpanzee', 'gorilla', 'baboon',
+            'salamander', 'newt', 'axolotl', 'frog', 'toad', 'lizard', 'iguana', 'alligator', 'crocodile', 'snake',
+            'car', 'automobile', 'truck', 'bus', 'trailer', 'tractor', 'motorcycle', 'bicycle', 'airplane', 'airliner', 'helicopter',
+            'boat', 'ship', 'submarine', 'canoe',
+            'laptop', 'computer', 'keyboard', 'screen', 'monitor', 'cellular', 'phone', 'ipod', 'television', 'radio',
+            'sofa', 'couch', 'chair', 'table', 'desk', 'bed', 'wardrobe', 'refrigerator', 'microwave', 'toaster', 'oven',
+            'guitar', 'piano', 'violin', 'drum', 'flute', 'organ',
+            'suit', 'jersey', 'jean', 'shirt', 'dress', 'shoe', 'boot', 'sandal', 'sneaker', 'sunglasses', 'backpack', 'purse', 'wallet', 'apron',
+            'building', 'castle', 'church', 'bridge', 'lighthouse', 'palace', 'monastery', 'mosque'
+        ]
+        self.disallowed_category_indices = set(
+            i for i, c in enumerate(self.imagenet_cats) if any(k in c.lower() for k in disallowed_keywords)
+        )
+
         # Grounded Sugarcane Agricultural Knowledge Base (ICAR-SBI & VSI Pune references)
         self.knowledge_base = {
             "Healthy": {
@@ -367,6 +414,14 @@ class SugarcanePredictor:
             }
         }
 
+    @staticmethod
+    def _cosine_similarity(a, b):
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        return float(np.dot(a, b) / (norm_a * norm_b))
+
     def validate_leaf_image(self, image: Image.Image):
         """
         Botanical & Signal-Processing Leaf Validation Pipeline:
@@ -443,6 +498,19 @@ class SugarcanePredictor:
         if excess_green < -7.0 or mean_green_ratio < 0.27:
             return False, DEFAULT_INVALID_MSG
 
+        # 10. Pretrained ImageNet Semantic Gatekeeper:
+        # Automatically reject non-plant entities (mammals, amphibians/reptiles like salamanders,
+        # dogs, cats, birds, vehicles, electronics, furniture, clothing, and buildings)
+        try:
+            img_in = self.imagenet_transforms(image).unsqueeze(0).to(DEVICE)
+            with torch.no_grad():
+                in_probs = self.imagenet_model(img_in).squeeze(0).softmax(0)
+            top_in_prob, top_in_idx = torch.max(in_probs, dim=0)
+            if top_in_idx.item() in self.disallowed_category_indices and top_in_prob.item() > 0.20:
+                return False, DEFAULT_INVALID_MSG
+        except Exception:
+            pass
+
         return True, ""
 
     def predict_image(self, image_input):
@@ -504,10 +572,11 @@ class SugarcanePredictor:
                 "model_version": self.model_version
             }
 
-        # 2. Model Inference Step
+        # 2. Model Feature Extraction & Inference Step
         input_tensor = self.transform(image).unsqueeze(0).to(DEVICE)
 
         with torch.no_grad():
+            feat = self.feature_extractor(input_tensor).squeeze(0).cpu().numpy()
             outputs = self.model(input_tensor)
             probabilities = torch.softmax(outputs, dim=1)[0]
             top_prob, top_idx = torch.max(probabilities, dim=0)
@@ -519,8 +588,30 @@ class SugarcanePredictor:
         probs_np = probabilities.cpu().numpy()
         entropy = -float(np.sum(probs_np * np.log(probs_np + 1e-6)))
 
+        # 3. Deep Feature Prototype Out-Of-Distribution (OOD) Validation:
+        # Rejects images that do not structurally match real sugarcane leaf prototypes
+        if self.class_prototypes and self.global_proto is not None:
+            max_sim = max(self._cosine_similarity(feat, self.class_prototypes[k]) for k in self.classes if k in self.class_prototypes)
+            glob_sim = self._cosine_similarity(feat, self.global_proto)
+            if max_sim < 0.14 or glob_sim < 0.08:
+                return {
+                    "success": False,
+                    "crop": "sugarcane",
+                    "status": "invalid_image",
+                    "valid_leaf": False,
+                    "disease": None,
+                    "confidence": None,
+                    "severity": None,
+                    "treatment": None,
+                    "message": "Invalid Image! Please upload a clear image of a sugarcane leaf to perform disease diagnosis.",
+                    "prediction": None,
+                    "recommendation": None,
+                    "products": None,
+                    "model_version": self.model_version
+                }
+
         # Hard rejection for completely uncertain / non-sugarcane patterns
-        if confidence < 0.28 or entropy > 1.55:
+        if confidence < 0.30 or entropy > 1.50:
             return {
                 "success": False,
                 "crop": "sugarcane",
